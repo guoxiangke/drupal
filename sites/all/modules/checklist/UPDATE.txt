@@ -1,0 +1,38 @@
+
+6.x-1.x -> 7.x-1.x
+--------------------------------------
+- No special requirements. Simply unpack the new module and run update.php
+
+
+7.x-1.x -> 7.x-2.x
+--------------------------------------
+- BEFORE UPDATING MODULE, DOWNLOAD NEW DEPENDENCY AND INSTALL: 
+  http://drupal.org/project/usergroups_api
+- Unpack the new version
+- Run update.php (tables will be added, dropped, and updated)
+- All of your checklists should be updated with each checklist
+  having a single instance that should be completed.
+
+This version introduces the idea of a checklist instance. An instance
+is a version of the checklist that must completed. You can think of
+it like this:
+- You create a checklist (this is like a template).
+- You add items to that checklist.
+- You then create an instance of that checklist and assign who should
+  complete the checklist. If no instances are created, no checklists
+  will be required to completed. Also, if you assign different instances
+  of a checklist to a user to complete, they will have to complete
+  each instance on it's own (this means that a user could complete the
+  same checklist multiple times if there are multiple instances of it).
+
+Also introduced is the idea of a group/team instance. When creating an
+instance, it can be defined such that the entire checklist is completed 
+by a team together, meaning that if one user completes or checks an 
+item off then it is checked off for everyone that must complete that 
+instance.
+
+Finally, the Usergroups API dependency will allow for more detailed
+groups that must complete checklist instances, not just roles. For
+example, you will be able to assign an instance to a specific user, or
+other group as defined by your currently installed modules. See the
+Usergroups API module for details on how groups are defined.

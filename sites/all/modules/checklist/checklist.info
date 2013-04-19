@@ -1,0 +1,22 @@
+name = "Checklist"
+description = "Configurable checklists"
+package = Other
+core = 7.x
+version=7.x-2.0
+
+dependencies[] = usergroups_api
+
+files[] = checklist.install
+files[] = checklist.module
+files[] = includes/checklist.admin.inc
+files[] = includes/checklist.handlers.inc
+files[] = includes/checklist.pages.inc
+files[] = includes/checklist.views.inc
+files[] = includes/checklist.views_default.inc
+
+; Information added by drupal.org packaging script on 2012-09-06
+version = "7.x-2.0-alpha3"
+core = "7.x"
+project = "checklist"
+datestamp = "1346944618"
+

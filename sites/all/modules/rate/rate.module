@@ -749,7 +749,6 @@ function rate_node_view($node, $view_mode, $langcode = '') {
   if ($view_mode != 'rss') {  
     // Adding the form to the node view
     $widgets = rate_get_active_widgets('node', $node->type, $view_mode);
-
     foreach ($widgets as $widget_id => $widget) {
       $widget_name = 'rate_' . $widget->name;
       _rate_check_widget($widget);
@@ -764,6 +763,7 @@ function rate_node_view($node, $view_mode, $langcode = '') {
       else {
         $node->content[$widget_name] = $widget_code;
       }
+    
   }}
 }
 

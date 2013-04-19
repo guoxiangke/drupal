@@ -1,0 +1,80 @@
+/** 公告 **/
+#gg{
+	position: fixed;
+	bottom: 0;
+	background:#000;
+	width: 100%;
+	line-height:23px;
+	z-index: 9999;
+	opacity: .60;
+	filter: alpha(opacity=60);
+	_bottom:auto;
+	_width: 100%;
+	_position: absolute;
+	_top:expression(eval(document.documentElement.scrollTop+document.documentElement.clientHeight-this.offsetHeight-(parseInt(this.currentStyle.marginTop,10)||0)-(parseInt(this.currentStyle.marginBottom,10)||0)));
+	-webkit-box-shadow:10px 0 5px #000;
+	-moz-box-shadow:10px 0 5px #000;
+	box-shadow:10px 0 5px #000;
+	}
+#gg a{
+	color: #fff;
+	font-size: 13px;
+	}
+#gg .close a {
+	float:right;
+	margin:0 10px 0 0;
+	}
+.bulletin {
+	height:35px;
+	color: #fff;
+	margin:0 0 0 20px;
+	background:url(../images/bulletin.gif) no-repeat;
+	min-height:23px;
+	overflow:hidden;
+	}
+.bulletin li{
+	float:left;
+	}
+
+#heartbeat-stream-siteactivity{
+	font-size: 12px;
+	font-weight: normal;
+	text-shadow:none;
+}
+#gg .close{
+	opacity: 0.7;
+}
+#gg .close:hover {
+	opacity: 0.8;
+}
+#gg #heartbeat-stream-siteactivity  a{
+	float:none;
+	}
+
+
+#gg .h-avatar img {
+width: 30px;
+}
+
+#gg .heartbeat-activity img.avatar {
+border: none;
+}
+#gg .h-content .h-msg {
+	float: left;
+}
+#gg .h-content {
+	width: 80%;
+}
+#gg .h-attachs {
+margin-top: 0px;
+}
+
+#gg .heartbeat-activity {
+padding: 3px 0 0px;
+}
+#gg .heartbeat-activity{
+  border-bottom: 0px dotted #CCCCCC;
+}
+#admin-menu{
+	display: none;
+}

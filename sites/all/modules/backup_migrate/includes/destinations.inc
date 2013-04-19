@@ -675,29 +675,11 @@ class backup_migrate_destination extends backup_migrate_item {
     return $files;
   }
 
-  /**
-   * Create an ini file and write the meta data.
-   */
   function create_info_file($file) {
-    $info = $this->_file_info_file($file);
+    $info = new backup_file(array('filename' => $file->filename() .'.info'));
     $data = _backup_migrate_array_to_ini($file->file_info);
     $info->put_contents($data);
     return $info;
-  }
-
-  /**
-   * Create the info file object.
-   */
-  function _file_info_file($file) {
-    $info = new backup_file(array('filename' => $this->_file_info_filename($file->file_id())));
-    return $info;
-  }
-
-  /**
-   * Determine the file name of the info file for a file.
-   */
-  function _file_info_filename($file_id) {
-    return $file_id . '.info';
   }
 
   /**
@@ -736,7 +718,6 @@ class backup_migrate_destination extends backup_migrate_item {
   function delete_file($file_id) {
     $this->file_cache_clear();
     $this->_delete_file($file_id);
-    $this->_delete_file($this->_file_info_filename($file_id));
   }
 
   /**

@@ -15,6 +15,8 @@ class OgMigrateRoles extends OgEntityMigration {
 
   public $keyName = 'rid';
 
+  protected $dependencies = array('OgMigrateMembership');
+
   /**
    * Indicate we are updating existing data.
    */

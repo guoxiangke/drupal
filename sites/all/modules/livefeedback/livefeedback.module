@@ -1,0 +1,185 @@
+<?php
+
+/**
+ * @file
+ * Live Feedback Module
+ * Implements a Live Feedback similar to 'Google Feedback'.
+ * Hackaton 2012.
+ */
+
+/**
+ * Implementation of hook_menu()
+ *
+ */
+function livefeedback_menu() {
+
+  $items['admin/reports/livefeedback'] = array(
+    'title'            => 'User Feedback',
+    'description'      => 'Manage live user feedback',
+    'page callback'    => 'livefeedback_viewentries',
+    'access arguments' => array('administer live feedback'),
+    'file'             => 'includes/livefeedback.admin.inc',
+  );
+  $items['admin/reports/livefeedback/view'] = array(
+    'title'  => 'List',
+    'type'   => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/reports/livefeedback/%'] = array(
+    'title'            => 'List',
+    'weight'           => -10,
+    'page arguments'   => array(3),
+    'page callback'    => 'livefeedback_viewentry',
+    'access arguments' => array('administer live feedback'),
+    'tab_parent'       => 'admin/reports/livefeedback',
+    'file'             => 'includes/livefeedback.admin.inc',
+  );
+  $items['admin/reports/livefeedback/export'] = array(
+    'title'            => 'Export to CSV',
+    'description'      => 'Export live feedback data.',
+    'page callback'    => 'livefeedback_export',
+    'access arguments' => array('administer live feedback'),
+    'type'             => MENU_LOCAL_ACTION,
+    'file'             => 'includes/livefeedback.admin.inc',
+  );
+
+  $items['admin/config/livefeedback'] = array(
+    'title'            => 'Configure',
+    'description'      => 'Configure the livefeedback module.',
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('livefeedback_configure'),
+    'access arguments' => array('administer live feedback'),
+    'file'             => 'includes/livefeedback.admin.inc',
+  );
+
+  $items['livefeedback/post'] = array(
+    'title'            => 'Livefeedback',
+    'page callback'    => 'livefeedback_ajax_responder',
+    'access arguments' => array('use live feedback'),
+    'type'             => MENU_CALLBACK,
+    'file'             => 'livefeedback.pages.inc',
+  );
+
+  return $items;
+
+}
+
+
+/**
+ * Implementation of hook_permission()
+ *
+ */
+function livefeedback_permission() {
+  return array(
+    'administer live feedback' => array(
+      'title' => t('Administer Live Feedback'),
+      'description' => t('Perform administration tasks for Live Feedback.'),
+    ),
+    'use live feedback' => array(
+      'title' => t('Use Live Feedback'),
+      'description' => t('Use Live Feedback.'),  
+    ),
+  );
+}
+
+
+/**
+ * Implementation of hook_mail()
+ *
+ */
+function livefeedback_mail($key, &$message, $params) {
+
+  $file  = file_load($params['fid']);
+  $path  = file_create_url($file->uri);
+  $image = file_get_contents($path);
+  $image = base64_encode($image);
+
+  $body  = t('Hello') . "\n\n";
+  $body .= t('A new feedback submission is available') . ":\n\n";
+  $body .= t('Time') . ': ' . format_date($params['timestamp']) . "\n";
+  $body .= t('URL') . ': ' . $params['url'] . "\n";
+  $body .= t('Message') . ': ' . check_plain($params['message']) . "\n\n";
+
+  if ($browser = unserialize($params['data'])) {
+    $body .= t('Additional Information') . ":\n\n";
+    foreach($browser as $key => $value) {
+      $body .= $key . ': ' . $value . "\n";
+    }
+  }
+
+  $body .= "\nThank you.\n\n";
+
+  $boundary = 'LiveFeedback-Arbitrary-Boundary';
+  $message['headers']['Content-Type'] = 'multipart/mixed; boundary=' . $boundary;
+  $message['headers']['Return-Path']  = '<>';
+
+  $message['subject'] = t('Feedback submission from !site', array(
+    '!site' => variable_get('site_name', t('Unknown Site') ),
+  ));
+
+  $text  = '--' . $boundary . "\n";
+  $text .= "Content-Transfer-Encoding: quoted-printable\n";
+  $text .= "Content-Type: text/plain;\n\tcharset=us-ascii\n\n";
+  $text .= $body . "\n\n";
+
+  $filename = sprintf('feedback-%s.png', $file->timestamp);
+  $attach   = '--' . $boundary . "\n";
+  $attach  .= "Content-Disposition: attachment;\n\tfilename=\"{$filename}\"\n";
+  $attach  .= "Content-Type: application/octet-stream;\n\tname=\"{$filename}\"\n";
+  $attach  .= "Content-Transfer-Encoding: base64\n\n";
+  $attach  .= $image . "\n\n";
+  $attach  .= '--' . $boundary . "--\n\n";
+
+  $message['body'][] = $text;
+  $message['body'][] = $attach;
+
+}
+
+
+/**
+ * Implementation of hook_theme()
+ *
+ */
+function livefeedback_theme($existing, $type, $theme, $path) {
+  return array(
+    'livefeedback_item' => array(
+      'template' => 'livefeedback-item',
+      'variables' => array('content' => NULL),
+      'path' => drupal_get_path('module', 'livefeedback') . '/templates',
+    ),
+  );
+}
+
+
+/* End of hook, API functions follow
+---------------------------------------------------------------------- */
+
+
+/**
+ * Sends an email of a specific report.
+ *
+ * @param $id
+ *   The row ID of an entry in the "livefeedback" table to send.
+ *
+ */
+function livefeedback_email_send($id) {
+
+  $email = variable_get('livefeedback_response_mail', variable_get('site_mail', ''));
+
+  if (!$email) {
+    return;
+  }
+
+  $result = db_select('livefeedback', 't')
+    ->fields('t')
+    ->condition('lid', $id, '=')
+    ->execute()
+    ->fetchAssoc();
+  $from = t('Feedback Bot <!email>', array(
+    '!email' => 'mailbot@' . variable_get('site_name', 'local'),
+  ));
+
+  drupal_mail('livefeedback', 'submission', $email, language_default(), $result, $from);
+
+}
+

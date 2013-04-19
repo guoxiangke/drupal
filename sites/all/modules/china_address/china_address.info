@@ -1,0 +1,5 @@
+name = China address field
+description = A Field offering province, city, and county of China
+package = Fields
+core = 7.x
+files[] = china_address.module

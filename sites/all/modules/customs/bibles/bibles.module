@@ -1,0 +1,42 @@
+<?php
+/**
+ * @author dale
+ * @version $Id$
+ * @copyright dale
+ * @package sina
+ */
+function bibles_init(){
+	drupal_add_js(drupal_get_path('module','bibles').'/bibles.js');
+	//drupal_add_css(drupal_get_path('module','bibles').'/bibles.css');
+}
+function bibles_menu(){
+	$items['bible'] = array(
+    'title' => '目录',
+    'page callback' => 'bible_books_index',
+    'access arguments' => array('access content'),
+    'type' => MENU_SUGGESTED_ITEM,
+    'file' => 'bibles.pages.inc',
+  );
+	$items['bible/index/%'] = array(
+    'title' => '卷目录',
+    'page callback' => 'bible_volumes_index',    
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+    'type' => MENU_SUGGESTED_ITEM,
+    'file' => 'bibles.pages.inc',
+  );
+	// bible/01/01|index/CUV 第一卷/第一节/version
+	$items['bible/%/%/%'] = array(
+    'title' => '经文',
+    'page callback' => 'bible_page',
+    'page arguments' => array(1,2,3),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'bibles.pages.inc',
+  );
+	$items['ws'] = array(
+    'title' => '长夜的牵引|良友广播',
+    'access arguments' => array('access content'),
+  );
+  return $items;
+}

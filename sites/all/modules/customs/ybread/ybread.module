@@ -1,0 +1,33 @@
+<?php
+/**
+ * Implements hook_menu().
+ */
+function ybread_menu() {
+  /*
+   *$items['blog'] = array(
+   *  'title' => 'blogs',
+   *  'page callback' => 'blog_page',
+   *  'access arguments' => array('access content'),
+   *  'type' => MENU_SUGGESTED_ITEM,
+   *);
+   */
+  $items['ybreads'] = array(
+    'title' => '灵命日粮',
+    'page callback' => 'ybread_page',
+    'type' => MENU_NORMAL_ITEM,
+    'menu_name'=> 'main-menu',
+    'access callback' => TRUE,
+    'file' => 'ybread.page.inc',
+  );
+
+  return $items;
+}
+/**
+ * Implements hook_cron().
+ */
+function ybread_cron() {
+   /* Your code here */
+   $prefix = url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q=');
+   $html = file_get_html($prefix.'ybreads');
+   unset($html);
+}

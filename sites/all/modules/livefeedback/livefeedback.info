@@ -1,0 +1,16 @@
+name = Live Feedback
+description = Provides all the awesomeness of "Google Feedback"
+package = "Hackaton 2012"
+core = 7.x
+configure = admin/config/livefeedback
+
+scripts[] = libs/html2canvas.min.js
+scripts[] = js/feedback.js
+stylesheets[all][] = css/livefeedback.css
+
+; Information added by drupal.org packaging script on 2012-09-28
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "livefeedback"
+datestamp = "1348835424"
+

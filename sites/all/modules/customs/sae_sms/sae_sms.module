@@ -1,0 +1,175 @@
+<?php
+/**
+ * @author dale
+ * @version $Id$
+ * @copyright dale
+ * @package DEV
+ */
+
+function sae_sms_permission() {
+  return $perms = array(
+    'send msg' => array(
+      'title' => t('send msg'),
+      'description' => t('send_msg'),
+      'restrict access' => TRUE,
+    )
+  );
+}
+
+/**
+ * Implementation of hook_menu.
+ */
+function sae_sms_menu() {
+  $items['send_sms'] = array(
+    'title' => '批量吗哪发送',
+    'description' => '批量吗哪发送for sae sms.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sae_sms_form'),
+    'access arguments' => array('send msg'),
+//    'file' => 'user.admin.inc',
+    'menu_name' => 'main-menu',
+    'weight' => -5,
+  );
+	$items['send_sms/history'] = array(
+    'title' => '发送历史',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sae_sms_form_history'),
+    'access arguments' => array('send msg'),
+//    'file' => 'user.admin.inc',
+    'menu_name' => 'main-menu',
+    'weight' => -5,
+  );
+  return $items;  
+}
+
+function sae_sms_form_alter(&$form, &$form_state, $form_id) 
+{
+	//dpm($form);
+}
+//If you implement this hook you MUST also implement a hook_form() 
+//if you want that node type to appear in the content type list.
+/*
+ * Implementation of hook_form().
+ * Display a node editing form. 
+ */
+function sae_sms_form() 
+{
+ 
+	$form['description'] = array(
+		'#markup'=>t('<h2>活水教会批量吗哪发送给【联通、电信】用户</h2>')
+	);
+	$form['phone_num']=array(
+		    '#type' => 'textarea',
+			  '#title' => t('手机号'),
+			  '#required' => TRUE,
+				'#default_value' => '13716587629; ←请以此格式填写手机号，并删除本行！;',
+			   '#description' => '请输入联通电信手机号，每行一个,用英文分号;隔开。注意手机号位数为11，并删除示例号码。',				
+			);
+$form['sms_text']=array(
+		    '#type' => 'textarea',
+			  '#title' => t('吗哪内容'),
+			  '#required' => TRUE,
+			  '#maxlength' => 65, 
+				'#description' => '<span>字数限制：<strong id="text_count_limits"></strong>/65&nbsp;&nbsp;  注意：每次发生不超过100行，即100个联系人已确保发生无异常。</span>',				
+			);
+   //$form['actions'] = array('#type' => 'actions', '#tree' => FALSE);
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('发送')
+    );
+    $form_state['redirect'] = array($_GET['q'], (isset($_GET['page']) ? array('query' => array('page' => $_GET['page'])) : array()));
+
+	return $form;
+}
+/**
+ * Form validation handler for authorize_filetransfer_form().
+ *
+ * @see authorize_filetransfer_form()
+ * @see authorize_filetransfer_submit()
+ */
+ function sae_sms_form_validate($form, &$form_state) {
+	 $phone_nums = trim($form_state['values']['phone_num']);
+	 $phone_nums = explode(';', $phone_nums, -1);
+	 $msg = trim($form_state['values']['sms_text']);
+	 foreach( $phone_nums as $line=> $number){
+	 	$number = trim($number);
+		if(!is_numeric($number)||strlen($number)!=11){
+			$number_error[$line] = $number;
+			
+		}else{
+			$number_right[$line] = $number;
+		}
+		
+	 }
+	  if (isset($number_error)) {	
+			foreach($number_error as $line=>$value){
+				form_set_error('phone_num', '有错误号码,请根据下面提示修改！');
+				drupal_set_message('请检查第'.$line.'(+-1)行：『'.$value.'』','error');
+			}
+	
+	  }else{
+	  }
+
+ } 
+ 
+ function sae_sms_form_submit($form, &$form_state) {
+	 $phone_nums = trim($form_state['values']['phone_num']);
+	 $phone_nums = explode(';', $phone_nums, -1);
+	 $msg = trim($form_state['values']['sms_text']);
+	 foreach( $phone_nums as $line=> $number){
+	 	$number = trim($number);
+		if(!is_numeric($number)||strlen($number)!=11){
+			$number_error[$line] = $number;
+			
+		}else{
+			$number_right[$line] = $number;
+		}
+		
+	 }
+	  
+	  {
+	  	$sae_sms_text=array('text'=>$msg);
+	  	drupal_write_record('sae_sms_text',$sae_sms_text);
+	  	$mobiles = array_unique($number_right);
+			drupal_set_message('本次发送信息'.count($mobiles).'条:','status');
+			drupal_set_message('信息内容：<br/>【'.$msg.'】','status');
+			$text_id = db_query('select text_id from sae_sms_text order by text_id desc limit 0,1')->fetchField();
+			
+	  	foreach ($mobiles as $key => $mobile) {
+	  		/*
+	  		$sms = apibus::init("sms"); //创建短信服务对象
+				$obj = $sms->send( $mobile, $msg , "UTF-8"); 
+				global $user;
+				$sae_sms_history = array(
+					'uid'=>$user->uid,
+					'receive'=>$mobile,
+					'text_id'=>$text_id,
+					'created'=>time(),
+				);
+				drupal_write_record('sae_sms_history',$sae_sms_history);
+        //dpm( $sms ); 
+*/
+         //错误输出 Tips: 亲，如果调用失败是不收费的 
+	      {
+         	drupal_set_message('成功发送到手机号：'.$mobile,'status');
+         }
+ 
+			}
+	  }
+
+ } 
+ 
+ 
+function sae_sms_init(){
+	drupal_add_js(drupal_get_path('module', 'sae_sms') .'/len_limits.js');
+	//drupal_add_js('jQuery(document).ready(function () { alert("Hello!"); });', 'inline');
+}
+
+function sae_sms_form_history() {
+	$form = array();
+	$header = array('id','user','phonenum','timestamp','message');
+	return $form;
+}
+/**
+ * @} End of "child_edu.module".
+ */

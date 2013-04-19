@@ -1,0 +1,88 @@
+<?php
+
+/**
+ * @file
+ * Live Feedback installation routines
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function livefeedback_schema() {
+  $schema['livefeedback'] = array(
+    'description' => 'Stores livefeedback items.',
+    'fields' => array(
+      'lid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique Live feedback item ID.',
+      ),
+      'uid' => array(
+        'description' => 'The user ID of the Live feedback reporter.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'url' => array(
+        'description' => 'The URL of the reporting page.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'message' => array(
+        'description' => 'The human-readable message of this Live feedback Report.',
+        'type' => 'text',
+        'not null' => FALSE,
+      ),
+      'fid' => array(
+        'description' => 'The filename for the screenshot.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'timestamp' => array(
+        'description' => 'The timestamp for the report.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'data' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array of additional data related to this Live feedback report.',
+      ),
+    ),
+    'foreign keys' => array(
+      'uid' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid'),
+      ),
+      'fid' => array(
+        'table' => 'file_managed',
+        'columns' => array('fid' => 'fid'),
+      ),
+    ),
+    'primary key' => array('lid'),
+    // 'unique keys' => array(
+    //   'lid' => array('lid'),
+    // ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function livefeedback_uninstall() {
+  // Add code for livefeedback.module unistall procedures here.
+  variable_del('livefeedback_send_mail');
+  variable_del('livefeedback_response_mail');
+  variable_del('livefeedback_screenshot_path');
+}

@@ -1,0 +1,8 @@
+name = love
+description = love.
+version = 1.1
+core = 7.x
+package = A-DEV
+files[] = love.heartbeat.inc
+;dependencies[] = heartbeat
+;dependencies[] = user_relationships

@@ -1,0 +1,74 @@
+﻿/**
+ * @file
+ * Page Styling
+ *
+ * Style the markup found in page.tpl.php. Also includes some styling of
+ * miscellaneous Drupal elements that appear in the $content variable, such as
+ * ul.links, .pager, .more-link, etc.
+ */
+
+
+/*
+ * Body
+ */
+
+#page {
+	background-image: url(../images/12_col.gif);
+}
+#site-name h1{
+	background-color:#0072c6;
+	display:inline;
+	font-size:31px;
+	letter-spacing: 4px;
+	font-family:"微软雅黑";
+	margin: 0;
+	padding:0;
+	text-align:center;	
+	font-weight:normal;
+}
+#site-name h1 span{
+	color:#fff;
+}
+#site-name a:link,
+#site-name a:visited {
+  color: #fff;
+  text-decoration: none;
+}
+#site-name a:hover,
+#site-name a:focus {
+  text-decoration: none;
+}
+#site-slogan {
+	font-size:13px;
+	font-family:"宋体","微软雅黑";	
+	font-weight:normal;
+}
+
+aside{
+	padding-left: 10px;
+}
+
+
+
+
+
+#footer{
+	color: #6F6F6F;
+	background-color: #333;
+	text-align: center;
+	line-height: 24px;
+}
+.page-footer-nav {
+	padding: 48px 0 36px;
+}
+.page-footer-nav a{
+	color: white;
+	text-decoration: none;
+	cursor: pointer;
+}
+.nav-inline-item{ 
+	display:inline; 
+}
+.page-footer-text {
+	padding-bottom: 48px;
+} 

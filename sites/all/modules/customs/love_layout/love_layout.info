@@ -1,0 +1,5 @@
+name = love_layout
+description = love theme relate.
+version = 1.1
+core = 7.x
+package = A-DEV

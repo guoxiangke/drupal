@@ -1,0 +1,81 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the role tree module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function sae_sms_schema() {
+	$schema['sae_sms_text'] = array(
+    'description' => 'Stores the send sms history.',
+    'fields' => array(
+      'text_id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+			'text' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'who',
+      )
+		),
+		'indexes' => array(
+      'text_id' => array('text_id'),
+    ),
+	);
+  $schema['sae_sms_history'] = array(
+    'description' => 'Stores the send sms history.',
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'who',
+      ),
+      'receive' => array(
+        'type' => 'varchar',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'text_id' => array(
+        'type' => 'varchar',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => '',
+      ),      
+      'created' => array(
+        'description' => 'The Unix timestamp when the node was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'receive' => array('receive'),
+    ),
+    'foreign keys' => array(
+      'text_id' => array(
+        'table' => 'sae_sms_text',
+        'columns' => array('text_id' => 'text_id'),
+      ),
+    )
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function sae_sms_uninstall() {
+	db_drop_table('sae_sms_history');
+	db_drop_table('sae_sms_text');
+}
