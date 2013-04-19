@@ -1,0 +1,43 @@
+1.在js调用 disableAppInstallButton() 函数禁用安装按钮。
+2.
+a.在js中调用 Drupal.settings.uuke_pad.apps 即可得到app安装json列表数据，返回数据示例:["translate.google.com","uuke.com.cn.app1"]。
+b.pad安装app请调用 app/manage/install ，POST数据 pid & package_name 返回json {"app_manage_op":"install","app_latest_vid":"5","local_app_vid":"5","app_install":1}或{"app_manage_op":"install","app_latest_vid":"5","app_install":3}
+或{"app_manage_op":"install","app_latest_vid":"5","local_app_vid":"5","app_install":2}
+ * 1已安装过,曾卸载，记录已存在!
+ * 2已安装过,未卸载，记录已存在!
+ * 3从未安装，现在记录!
+c.pad卸载app请调用 app/manage/uninstall ，POST数据 pid & package_name 返回：{"app_manage_op":"uninstall","app_latest_vid":"5","op_status":true}
+pid即pad 唯一标识
+package_name 是app唯一标识
+---------------for drupaler---------------
+README.txt of uuke_pad.module
+INSTALL
+1. add content type app a new filed name:field_app_package_name
+2. TEST
+	2.1 App install Request URL: http://market/?q=app/manage/install &package_name=translate.google.com&pid=123456  &dev=1 
+	2.2  App uninstall Request URL: http://market/?q=app/manage/uninstall &package_name=translate.google.com&pid=123456  &dev=1
+	2.3  App update Request URL: http://market/?q=app/manage/update &package_name=translate.google.com&pid=123456  &dev=1
+	REQUEST PARAM: & need post by pad. for test can user the & url.
+		1.package_name
+		2.pid the PAD Identify
+	2.4 http://market/?q=app/get_list &package_name=translate.google.com&pid=123456  &dev=1
+		(get the pad installed apps list)
+		retrun json like:["translate.google.com","uuke.com.cn.app1"]
+	2.4 pad app open ,init app list in :  Drupal.settings.uuke_pad.apps 
+---------------------------------------------------------------------------------
+在2013-04-07，"唐苏雅" <tangsuya@uuke.com.cn> 写道:
+-----原始邮件-----
+发件人: "唐苏雅" <tangsuya@uuke.com.cn>
+发送时间: 2013年4月7日 星期日
+收件人: "郭向科" <guoxiangke@uuke.com.cn>
+主题: 接口需求
+
+
+1.页面js
+disable 安装按钮的js函数
+
+2.后台接口
+a. 初始化 提交uuid, 返回 已安装package name列表
+b. 安装完成后，提交package name，返回是否记录成功
+c. 删除app， 提交package name, 返回是否删除城公共
+
