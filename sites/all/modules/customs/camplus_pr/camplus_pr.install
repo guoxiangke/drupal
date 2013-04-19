@@ -1,0 +1,15 @@
+<?php
+/**
+ * Implementation of hook_uninstall().
+ */
+/**
+ * Implements hook_uninstall().
+ */
+function camplus_pr_uninstall() {
+  //Delete module variables
+  db_delete('variable')
+    ->condition('name', 'camplus_pr_%%', 'LIKE')
+    ->execute();
+	
+}
+?>

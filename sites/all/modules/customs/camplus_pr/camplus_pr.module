@@ -1,0 +1,589 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ * Approve level settings/PR roles involved
+ */
+function camplus_pr_menu() {
+	$items = array();
+  $items['admin/config/camplus'] = array(
+    'title' => 'Education Groupware',
+    'position' => 'left',
+    'weight' => -20,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('camplus bi settings'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  $items['admin/config/camplus/pr_settings'] = array(
+    'title' => t('PR settings'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('camplus_pr_settings_form'),
+    'access arguments' => array('camplus bi settings'),
+    'file' => 'camplus_pr.pages.inc',
+  );
+  $items['admin/config/camplus/pr_settings/rang_count'] = array(
+    'title' => t('PR settings rang count'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('camplus_pr_settings_form'),
+    'access arguments' => array('camplus bi settings'),
+    'file' => 'camplus_pr.pages.inc',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' =>-28,
+  );
+	$items['admin/config/camplus/pr_settings/roles_involved'] = array(
+		'title' => t('PR roles involved'),
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('camplus_pr_roles_involved_settings_form'),
+    'access arguments' => array('camplus bi settings'),
+		'file' => 'camplus_pr.pages.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' =>-30,
+	);
+  $items['admin/config/camplus/pr_settings/roles_weight'] = array(
+    'title' => t('PR roles weight'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('camplus_pr_roles_weight_settings_form'),
+    'access arguments' => array('camplus bi settings'),
+    'file' => 'camplus_pr.pages.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' =>-29,
+  );
+	//PR range settings
+	$items['admin/config/camplus/pr_settings/range_settings'] = array(
+		'title' => t('PR range settings'),
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('camplus_pr_range_settings_form'),
+    'access arguments' => array('camplus bi settings'),
+		'file' => 'camplus_pr.pages.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' =>-27,
+	);
+  $items['admin/config/camplus/pr_settings/pr_approve_settings'] = array(
+    'title' => t('PR approve workflow settings'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('camplus_pr_approve_settings_form'),
+    'access arguments' => array('camplus bi settings'),
+    'file' => 'camplus_pr.pages.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' =>-26,
+  );
+  $items['admin/people/advanced_management/budget/settings'] = array(
+    'title' => 'Budget settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('camplus_pr_budget_settings_form'),
+    'access arguments' => array('camplus budget settings'),
+    'file' => 'camplus_pr.pages.inc',
+    'weight' => 7,
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['node/%node/undraft'] =  array(
+    'title' => 'undraft pr',
+    'page callback' => 'camplus_pr_undraft',
+    'page arguments' => array(1),
+    'access arguments' => array('create purchase_request content'),
+    'type' => MENU_CALLBACK,
+  );
+	return $items;
+}
+
+function camplus_pr_undraft($node) {
+  $node->status = 1;
+  node_save($node);
+  drupal_goto('node/'.$node->nid);
+}
+/**
+ * Implements hook_permission().
+ */
+function camplus_pr_permission() {
+	return array(
+    'camplus purchase request approvable' =>  array(
+      'title' => t('Camplus Purchase Request approvable'),//审批资格 权限
+      'restrict access' => TRUE,
+    ),
+    'camplus budget settings' =>  array(
+      'title' => t('Camplus BI Settings'),//书记 权限 预算设置
+      'restrict access' => TRUE,
+    ),
+   );
+}
+/**
+ * Implements hook_theme().
+ */
+function camplus_pr_theme() {
+  return array(
+    'camplus_pr_roles_weight_settings_form' => array(
+      'render element' => 'form',
+    ), 
+    'camplus_pr_range_settings_form'  => array(
+      'render element' => 'form',
+    ),
+    'camplus_pr_approve_settings_form'  => array(
+      'render element' => 'form',
+    ),  
+    'camplus_pr_budget_settings_form' => array(
+      'render element' => 'form',
+    ),          
+  );
+}
+/**
+ * Implements hook_form_alter().
+ */
+function camplus_pr_form_alter(&$form, &$form_state, $form_id) {
+  $forms = array('camplus_pr_range_settings_form','camplus_pr_roles_involved_settings_form');
+
+	if(in_array($form_id, $forms)){
+    drupal_add_css(drupal_get_path('module', 'camplus_pr').'/camplus_pr.css');
+  }
+
+  if($form_id =='purchase_request_node_form'){
+    drupal_add_js(drupal_get_path('module', 'camplus_pr').'/camplus_pr.js');
+    $form['bi_warning'] = array(
+      '#markup' => '1.您不能跨部门预算<br/>2.该部门的为负值，不可选择 <br/>3.不能超额',
+      '#weight' => -100,
+      '#prefix' => '<div id="bi_warning" class="messages warning">',
+      '#suffix' => '</div>',
+    );
+    $form['#validate'][] = 'purchase_request_node_form_validate';
+  }
+
+}
+function purchase_request_node_form_validate($form, &$form_state) {
+  $form_state['rebuild'] = TRUE;
+  $error_text= 'error';
+  $error_name = '123';
+  dpm($form_state['values']);
+  form_set_error($error_name, t($error_text));
+}
+
+
+function camplus_pr_field_widget_form_alter(&$element, &$form_state, $context) {
+  $form_state['rebuild'] = TRUE;
+  //field_budget_items
+  //必须是当前年份的预算项目
+  //普通角色只能选择本部门的
+  //Groups audience == 普通角色所属部门
+  if(isset($element['#field_name']) && $element['#field_name'] == 'field_budget_items') {
+
+    $budget_items = $element['#options'];
+    global $user;
+    foreach ($budget_items as $budget_item_nid => $title) {
+      
+      $node = node_load($budget_item_nid);
+      if(!isset($node->field_financial_year[LANGUAGE_NONE][0]['value']) || $node->field_financial_year[LANGUAGE_NONE][0]['value'] != camplus_pr_get_current_financial_year()){
+        unset($element['#options'][$budget_item_nid]);
+      }
+
+      // $element['#options']['_none'] = t('- Select a value -');
+      // $element['#default_value'] = '_none';
+      $element['#ajax'] = array(
+        'callback' => 'ajax_get_bi_mixable_amount_callback',
+        'wrapper' => 'bi_warning',
+        'method' => 'replace',
+        'effect' => 'fade',
+      );
+    }
+  }
+}
+/**
+ * Implements hook_admin_path().
+ */
+function camplus_pr_admin_paths_alter(&$paths) {
+  $paths['node/add/purchase-request'] = FALSE;
+  $paths['node/%node/edit'] = FALSE;
+}
+/**
+ * Callback element needs only select the portion of the form to be updated.
+ * Since #ajax['callback'] return can be HTML or a renderable array (or an
+ * array of commands), we can just return a piece of the form.
+ */
+function ajax_get_bi_mixable_amount_callback($form, &$form_state) {
+  // $form_state['rebuild'] = TRUE;
+  $field_budget_items = $form_state['values']['field_budget_items'][LANGUAGE_NONE];
+  $field_budget_items_amount = $form_state['values']['field_budget_items_amount'];
+  foreach ($field_budget_items as $key => $budget_nid) {
+    $bis_info_all = get_bis_info_all($budget_nid['target_id']);
+    // $mixable_amount = get_bi_mixable_amount($budget_nid['target_id']);
+    $output .= $budget_nid['target_id'].'-->'.$bis_info_all['g'].'-->'.$bis_info_all['f'].'<br/>';
+  }
+  //user input value > max mix value
+
+  dpm($form_state['values']['field_budget_items'],'why not the choose value of BI?');
+
+  {// todo 获取预算项目的max值
+   $commands[] = ajax_command_replace('#bi_warning', $html='<div id="bi_warning" class="messages warning">budget_nid-->This BI余额--->可通用余额<br/>'.$output.'</div>', $settings = NULL);
+   //您不能跨部门选择
+   // 该部门的为负值，不可选择
+  }
+  return array('#type' => 'ajax', '#commands' => $commands);
+}
+
+/**
+ * Implements hook_init().
+ */
+function camplus_pr_init() {
+  $GLOBALS['debug'] = FALSE;
+  $public_groups = druedu_user_get_nodes_by_group('school_department');
+  $variables = array();
+  foreach ($public_groups as $g_nid => $g_node) {
+    $all_subjects_node = camplus_pr_get_bis_by_year($g_nid,$financial_year = NULL);
+    foreach ($all_subjects_node as $s_nid => $s_node) {
+      $variables[$s_nid] = get_bi_mixable_amount($s_nid); 
+    }
+  }
+  drupal_add_js(array('camplus_pr' => $variables), 'setting');
+}
+
+function camplus_pr_get_current_financial_year(){
+  $financial_year_begin = variable_get('camplus_pr_financial_year_begin', '09-01');
+  $financial_year_end = variable_get('camplus_pr_financial_year_end', '08-31');
+  //2014-08-31 00:00:00
+  $financial_year_end = strtotime(date('Y').'-'.$financial_year_end.' 23:59:59');
+  if(time()<=$financial_year_end) {
+    $financial_year =  date('Y').'-01-01 00:00:00';//2013学年度
+  }else{
+    $financial_year =  (date('Y')+1).'-01-01 00:00:00';//2013+1学年度
+  }
+  return  $financial_year;
+}
+function camplus_pr_approve_flag_generate($key) {
+  $flags = array();
+  // Exported flag: "Bookmarks".
+  $flags[$key] = array (
+    'content_type' => 'node',
+    'title' => 'Approve',
+    'global' => '0',
+    'types' => 
+      array (
+        0 => 'purchase_request',
+      ),
+    'flag_short' => 'Approve this PR',
+    'flag_long' => 'Approve this Purchase Request',
+    'flag_message' => 'This Purchase Request has been Approved',
+    'unflag_short' => 'Unbookmark this',
+    'unflag_long' => 'Remove this post from your bookmarks',
+    'unflag_message' => 'This post has been removed from your bookmarks',
+    'unflag_denied_text' => '',
+    'link_type' => 'toggle',
+    'roles' => 
+      array (
+        'flag' => 
+        array (
+          0 => 2,
+        ),
+        'unflag' => 
+        array (
+          0 => 2,
+        ),
+      ),
+    'weight' => 0,
+    'show_on_form' => 1,
+    'access_author' => '',
+    'show_on_page' => 1,
+    'show_on_teaser' => 1,
+    'show_contextual_link' => false,
+    'i18n' => 0,
+    'api_version' => 2,
+  );
+  return $flags;
+}
+
+//获取该年度的所有预算budget_item
+//camplus_pr_get_bis_by_year
+//financial_year 2013-01-01 00:00:00
+
+function camplus_pr_get_bis_by_year($department_nid, $financial_year = NULL) {
+  if(!$financial_year){
+    $financial_year_begin = variable_get('camplus_pr_financial_year_begin', '09-01');
+    $financial_year_end = variable_get('camplus_pr_financial_year_end', '08-31');
+    //2014-08-31 00:00:00
+    $financial_year_end = strtotime(date('Y').'-'.$financial_year_end.' 23:59:59');
+    if(time()<=$financial_year_end) {
+      $financial_year =  date('Y').'-01-01 00:00:00';//2013学年度
+    }else{
+      $financial_year =  (date('Y')+1).'-01-01 00:00:00';//2013+1学年度
+    }
+  }
+
+  $query = db_select('field_data_field_financial_year', 'f');
+  $query->join('node','n','n.nid = f.entity_id');
+  $nids = $query
+    ->fields('f', array('entity_id'))//nid
+    ->condition('n.type ','budget_item')
+    ->condition('f.field_financial_year_value',$financial_year)
+    
+    ->condition('n.status',1)
+    ->orderBy('n.created ', 'ASC')
+    ->execute();
+  $nodes = node_load_multiple($nids->fetchCol());
+  return $nodes ? $nodes : array();
+}
+
+//获取该预算下的所有PR
+//get_group_nodes_by_uid/field_financial_year
+function camplus_pr_get_prs($budget_nid, $uid = NULL) {
+  //strtotime($field_financial_year);
+  $query = db_select('field_data_field_budget_items', 'f');
+  $query->join('node','n','n.nid = f.entity_id');
+  $query = $query
+    ->fields('f', array('entity_id'))//nid
+    ->condition('f.field_budget_items_target_id',$budget_nid);
+  if($uid && is_numeric($uid)) {
+     $query = $query->condition('n.status',1);
+  }
+    
+  $query = $query->condition('n.status',1)
+    ->orderBy('n.created ', 'ASC')
+    ->execute();
+  $nodes = node_load_multiple($query->fetchCol());
+  return $nodes ? $nodes : array();
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function camplus_pr_menu_alter(&$items) {
+  $items['node/%node/edit']['access callback'] = 'node_access4camplus_pr';
+}
+/**
+ * @see node_access
+ */
+function node_access4camplus_pr($op, $node, $account = NULL) {
+  if($node->type == 'purchase_request') {
+    //一旦发布 not be a Draft，不可编辑
+    global $user; 
+     // && !in_array('administrator', $user->roles) 
+    if($node->status && $user->uid <> 1) {
+      dpm('一旦发布 not be a Draft，不可编辑',__LINE__);
+      return false;
+    }
+    return node_access($op, $node, $account);
+  }else {
+    return node_access($op, $node, $account);
+  }
+ }
+
+ /**
+ * Cancel 后，不可unflag/unCancel
+ * @see flag_flag:access()
+ */
+function camplus_pr_flag_access($flag, $content_id, $action, $account) {
+  global $debug;
+  if($flag->name == 'cancel' || $flag->name == 'paid') {
+    $node = node_load($content_id);
+    // if($node->uid != $account->uid) return;
+    if(!$node) return;
+    $widget = _camplus_pr_get_approve_rate($node);
+    if(!isset($widget->id)) return;
+    $approve_status = _rate_pr_check_permissions($node,$widget);
+    if($debug) dpm($approve_status);
+    //已经标记Cancel，不可再标记Paid
+    if($flag->name == 'paid' && isset($approve_status['flags']['cancel']) && $approve_status['flags']['cancel'] ){
+      if($debug) dpm('已经标记Cancel，不可再标记Paid',__LINE__);
+      return FALSE;
+    }
+    if($flag->name == 'cancel' && isset($approve_status['flags']['paid']) && $approve_status['flags']['paid'] ){
+      if($debug) dpm('已经标记Paid，不可再标记Cancel',__LINE__);
+      return FALSE;
+    }
+    //还未全部审核/REJECT，manager不可标记paid
+    if($flag->name == 'paid' &&($approve_status['workflow_status'] == 'pending' ||$approve_status['workflow_status'] == 'reject')){
+      if($debug) dpm('还未全部审核，manager不可标记paid!',__LINE__);
+      return FALSE;
+    }
+    //是否可以Cancel与审核状态无关。
+    
+    //未发布状态，manager/author不能看到flag：Paid & flag：cancel
+    if(!$node->status) {
+      return FALSE;
+    }
+  }
+}
+
+/**
+ * @param nid or node
+ * get every row of the table.
+ * 获取预算基本信息
+ */
+function get_bis_info($node) {
+
+  if(is_numeric($node)) {
+    $budget_nid = $node;
+    $bi_node = node_load($budget_nid);
+  }else{
+    $budget_nid = $node->nid;
+    $bi_node = $node;
+  }
+    
+  $bis = array();
+  if(!$bi_node->nid) return $bis; // not exist the BI node.
+  if (!isset($bi_node->field_pr_budget[LANGUAGE_NONE][0]['value'])) {
+    $bis['amount'] = 0;
+  }else {
+    $bis['amount'] = $bi_node->field_pr_budget[LANGUAGE_NONE][0]['value'];
+  }
+  //已批支
+  //已批支出 get all PRs begin
+        $prs = camplus_pr_get_prs($budget_nid);
+         $pending = 0;
+         $approved = 0;
+         $rejectd = 0;
+         // get  approved appending and rejectd
+         foreach ($prs as $nid => $pr_node) {
+            // 排除canceled PRs
+            $flags = flag_get_counts('node', $nid, $reset = FALSE);
+            if(isset($flags['cancel']) && $flags['cancel']){
+               dpm('canceled pr:'.$nid,__LINE__);
+               continue;
+            }
+           $widgets = rate_get_active_widgets('node', $pr_node->type);
+           //get pr item
+           foreach ($pr_node->field_budget_items[LANGUAGE_NONE] as $key => $value) {
+            if($value['target_id'] ==  $budget_nid) {
+              //field_budget_items_amount_index
+              $bi_index = $key;
+              break;
+            }
+           }
+            foreach ($widgets as $widget_id => $widget) {
+              if($widget->name == 'approve'){
+                $widget->id = $widget_id;
+                $approve_status = _rate_pr_check_permissions($pr_node,$widget);
+                switch ($approve_status['workflow_status']) {
+                  case 'pending':
+                    $pending += $pr_node->field_budget_items_amount[LANGUAGE_NONE][$bi_index]['value'];
+                    break;
+                  case 'approved':
+                    $approved += $pr_node->field_budget_items_amount[LANGUAGE_NONE][$bi_index]['value'];
+                    break;
+                  default: //rejectd FALSE
+                    $rejectd += $pr_node->field_budget_items_amount[LANGUAGE_NONE][$bi_index]['value'];
+                    break;
+                }
+                break;
+              }else{
+                continue;
+              }
+            }
+         }
+  //已批支出 get all PRs end
+  $bis['approved'] = $approved;
+  $bis['pending'] = $pending ;
+  $bis['rejectd'] = $rejectd ;
+  if(!isset($bi_node->field_pr_allowance[LANGUAGE_NONE][0]['value'])) {
+     $bis['allowance'] = 0;
+  }else {
+    $bis['allowance'] = $bi_node->field_pr_allowance[LANGUAGE_NONE][0]['value'];
+  }
+  if(!isset($bi_node->field_mixable_key[LANGUAGE_NONE][0]['value'])) {
+    $bis['mixable_key'] = 0;
+  }else {
+   $bis['mixable_key'] = $bi_node->field_mixable_key[LANGUAGE_NONE][0]['value'];
+  }
+  return $bis;
+}
+/**
+ * 获取通用余额
+ */
+function get_bi_mixable_amount($budget_nid) {
+  $bi_node = node_load($budget_nid); 
+  $bi_item = get_bis_info($bi_node);
+
+
+  if(!isset($bi_node->field_mixable_key[LANGUAGE_NONE][0]['value'])) return $bi_item['amount']-$bi_item['approved']-$bi_item['pending']+$bi_item['allowance'];
+  $mixable_amount = 0;
+  $mixable_key = $bi_node->field_mixable_key[LANGUAGE_NONE][0]['value'];
+  $department_nid = $bi_node->field_parents_department[LANGUAGE_NONE][0]['target_id'];
+  $financial_year = $bi_node->field_financial_year[LANGUAGE_NONE][0]['value'];
+  $bis = camplus_pr_get_bis_by_year($department_nid,$financial_year);
+  // get  approved appending and rejectd
+
+  foreach ($bis as $nid => $node) {
+    if(isset($node->field_mixable_key[LANGUAGE_NONE][0]['value']) && $node->field_mixable_key[LANGUAGE_NONE][0]['value'] == $mixable_key){
+      $bi_item = get_bis_info($node);
+      $max_overage = $bi_item['amount']-$bi_item['approved']-$bi_item['pending']+$bi_item['allowance'];
+      $mixable_amount += $max_overage;
+    }
+  }
+  $return['mixable_amount'] = $mixable_amount;
+  return $mixable_amount;
+}
+/**
+ * 获取预算所有信息
+ * @see logic.png
+ */
+function get_bis_info_all($budget_nid) {
+  $node = node_load($budget_nid);
+  $row = array();
+  if(isset($node->field_pr_budget[LANGUAGE_NONE])) {
+    $field_pr_budget = $node->field_pr_budget[LANGUAGE_NONE][0]['value'];
+    $row['a'] = $field_pr_budget;
+  }else{ 
+    $field_pr_budget = 0;
+    $row['a'] = '-';
+  }
+  //已批支出 get all PRs
+  $prs = camplus_pr_get_prs($budget_nid);
+  $pending = 0;
+  $approved = 0;
+  $rejectd = 0;
+  // get  approved appending and rejectd
+   foreach ($prs as $nid => $pr_node) {
+      // 排除canceled PRs
+      $flags = flag_get_counts('node', $nid, $reset = FALSE);
+      if(isset($flags['cancel']) && $flags['cancel']){
+         dpm('canceled pr:'.$nid,__LINE__);
+         continue;
+      }
+
+     $widgets = rate_get_active_widgets('node', $pr_node->type);
+     //get pr item
+     foreach ($pr_node->field_budget_items[LANGUAGE_NONE] as $key => $value) {
+      if($value['target_id'] ==  $budget_nid) {
+        //field_budget_items_amount_index
+        $bi_index = $key;
+        break;
+      }
+     }
+      foreach ($widgets as $widget_id => $widget) {
+        if($widget->name == 'approve'){
+          $widget->id = $widget_id;
+          $approve_status = _rate_pr_check_permissions($pr_node,$widget);
+          switch ($approve_status['workflow_status']) {
+            case 'pending':
+              $pending += $pr_node->field_budget_items_amount[LANGUAGE_NONE][$bi_index]['value'];
+              break;
+            case 'approved':
+              $approved += $pr_node->field_budget_items_amount[LANGUAGE_NONE][$bi_index]['value'];
+              break;
+            default: //rejectd FALSE
+              $rejectd += $pr_node->field_budget_items_amount[LANGUAGE_NONE][$bi_index]['value'];
+              break;
+          }
+          break;
+        }else{
+          continue;
+        }
+      }
+   }
+  $row['b'] = sprintf("%01.2f", $approved);
+
+  $row['c'] = sprintf("%01.2f", $pending);
+  $row_d = $field_pr_budget - $approved - $pending;
+  $row['d'] = sprintf("%01.2f", $field_pr_budget - $approved - $pending);// '预算余额';
+  if(isset($node->field_pr_allowance[LANGUAGE_NONE])) {
+    $row_e = $node->field_pr_allowance[LANGUAGE_NONE][0]['value'];
+    $row['e'] = $row_e;
+  }else{
+    // $row_e = 0;
+    $row['e'] = 0;
+  }
+  $row['f'] = sprintf("%01.2f", $row_d + $row_e);//max余额
+  if(isset($node->field_mixable_key[LANGUAGE_NONE])) {
+    $row['mixable_key'] = $node->field_mixable_key[LANGUAGE_NONE][0]['value'];
+  }else{
+    $row['mixable_key'] = NULL;
+  }
+  $row['g'] = get_bi_mixable_amount($budget_nid);//'通用余额';
+  return $row;
+}

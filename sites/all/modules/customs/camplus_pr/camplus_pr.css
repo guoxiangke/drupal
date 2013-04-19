@@ -1,0 +1,18 @@
+#camplus-pr-range-settings-form .form-type-textfield{
+	display: inline;
+}
+/* all */
+::-webkit-input-placeholder { color:#f00; }
+::-moz-placeholder { color:#f00; } /* firefox 19+ */
+:-ms-input-placeholder { color:#f00; } /* ie */
+input:-moz-placeholder { color:#f00; }
+
+/* individual: webkit */
+input::-webkit-input-placeholder { color:#666; }
+/*#field3::-webkit-input-placeholder { color:#090; background:lightgreen; text-transform:uppercase; }
+#field4::-webkit-input-placeholder { font-style:italic; text-decoration:overline; letter-spacing:3px; color:#999; }*/
+
+/* individual: mozilla */
+input::-moz-placeholder { color:#666; }
+/*#field3::-moz-placeholder { color:#090; background:lightgreen; text-transform:uppercase; }
+#field4::-moz-placeholder { font-style:italic; text-decoration:overline; letter-spacing:3px; color:#999; }*/

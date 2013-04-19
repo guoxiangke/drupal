@@ -1,0 +1,50 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the role tree module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function role_tree_schema() {
+  $schema['role_hierarchy'] = array(
+    'description' => 'Stores the hierarchical relationship between roles.',
+    'fields' => array(
+      'rid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Primary Key: The {role}.rid of the role.',
+      ),
+      'parent' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => "Primary Key: The {role}.rid of the role's parent. 0 indicates no parent.",
+      ),
+    ),
+    'indexes' => array(
+      'parent' => array('parent'),
+    ),
+    'foreign keys' => array(
+      'role' => array(
+        'table' => 'role',
+        'columns' => array('rid' => 'rid'),
+      ),
+    ),
+    'primary key' => array('rid', 'parent'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function role_tree_uninstall() {
+	db_drop_table('role_hierarchy');
+}

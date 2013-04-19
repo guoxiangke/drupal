@@ -1,0 +1,254 @@
+<?php
+
+/**
+ * Implements hook_node_view().
+ */
+function rate_pr_node_view($node, $view_mode, $langcode) {
+
+  //标记paid后，不可以再rate了
+  $show_flag = TRUE;
+  $flags = flag_get_counts('node', $node->nid, $reset = FALSE);
+  if(isset($flags['paid']) && $flags['paid']) {
+     $show_flag = FALSE;
+  }
+  if ($view_mode != 'rss' && $node->type == 'purchase_request') {
+    // Adding the form to the node view
+    $widgets = rate_get_active_widgets('node', $node->type, $view_mode);
+    foreach ($widgets as $widget_id => $widget) {
+    	//没有权限时，清楚rate
+      $widget->id = $widget_id;
+      //一旦审核通过，所有审批部门角色不可更改即 not show rate.
+      if($widget->name == 'approve') {
+        $approve_status = _rate_pr_check_permissions($node,$widget);
+        if(!$approve_status['permit_flag'] || !$show_flag) {
+          // 根据PR节点的总额确定which审批流程
+          // 在上一个审批流程没有确定前 其他后续
+          $widget_name = 'rate_' . $widget->name;
+          if ($widget->node_display == RATE_DISPLAY_DISABLE) {
+            unset($node->$widget_name);
+          }
+          else {
+            unset($node->content[$widget_name]);
+          }
+        }
+        break;
+      }
+    }
+  //如果已经审核，或ing，不可编辑
+  }
+
+  global $user;
+  if(!$node->status &&$node->type ='purchase_request' && $user->uid == $node->uid){
+    $node->content['undraft'] = array('#markup'=>l('undraft','node/'.$node->nid.'/undraft'));
+    $node->content['edit'] = array('#markup'=>l('edit','node/'.$node->nid.'/edit'));
+  }
+}
+//check approve workflow status:
+//true false 
+//status: approve_level=rid, approve_rang=0~4,  approve_status=Approve/Reject
+//permit_flag:true false.
+//status:true/false  means the PR finaly status.
+function _rate_pr_check_permissions($node, $widget, $user = NULL) {
+	if($node->type != 'purchase_request') return FALSE;
+	if(!$user) global $user;
+  global $debug;
+  $approve_status['flags'] = flag_get_counts('node', $node->nid, $reset = FALSE);
+  //确定角色和第几级审批设定
+  {
+    //第几级审批设定
+    //field_budget_items_amount
+    $field_chosen_price = 0;
+    foreach ($node->field_budget_items_amount[LANGUAGE_NONE]  as $amount) {
+      $field_chosen_price += $amount['value'];
+    }
+    // $field_chosen_price = $node->field_chosen_price[LANGUAGE_NONE][0]['value'];
+    $field_payment_from_students = $node->field_payment_from_students[LANGUAGE_NONE][0]['value'];
+    $total = $field_chosen_price + $field_payment_from_students;
+
+    $camplus_pr_range_settings = variable_get('camplus_pr_range_settings');
+    foreach ($camplus_pr_range_settings as $key => $value) {
+      if($value['end']-$total >= 0) {
+        $approve_rang = $key;
+        break;
+      }
+    }
+    $approve_status['approve_rang'] = $approve_rang;
+    $workflow_settings = variable_get('camplus_pr_workflow_settings');
+    $workflow_settings = $workflow_settings[$approve_rang];
+    //
+    $rate_results = rate_get_results('node', $node->nid, $widget->id);
+    if($rate_results['options']['-1']) {   //attention -1,can not change.
+    //即有人选择reject，审核不通过
+      $approve_status['workflow_status'] = 'reject';
+      if($debug) dpm('审核不通过,即有人选择');
+    }elseif($rate_results['options']['1'] == count(array_filter($workflow_settings))){//all choosed approve,审核通过
+      $approve_status['workflow_status'] = 'approved';
+       if($debug) dpm('审核通过');
+    }else{//审核中
+       $approve_status['workflow_status'] = 'pending';
+       if($debug) dpm('审核中');
+    }
+    //确定角色
+    $camplus_pr_approvable_role_involved = array_keys(variable_get('camplus_pr_approvable_role_involved'));
+    $flag_role_involved = FALSE;
+    $role = FALSE;
+    $rid = FALSE;
+    foreach ($user->roles as $key => $value) {
+      if (in_array($value, $camplus_pr_approvable_role_involved)) {
+        $rid = $key;
+        $role = $value;
+        $flag_role_involved = TRUE;
+        break;
+      }
+    }
+    if($flag_role_involved){
+      $approve_status['approve_level'] = $rid;
+    }else{
+      //用户角色不在审核流程中，即无权限，返回false
+      $approve_status['permit_flag'] = $flag_role_involved; //false
+      return $approve_status;
+    }
+
+  }
+
+  //用户已经投票/审批过，即有权限
+  if(isset($rate_results['user_vote'])) {
+    $approve_status['status'] = $rate_results['user_vote'];
+    $approve_status['permit_flag'] = TRUE;
+    return $approve_status;
+  }else {//进一步判定 用户尚未投票/审批，且有相应角色，需要根据审核流程判断是否此时有资格看到rate
+    if($debug) dpm($workflow_settings);
+    $camplus_pr_approvable_role_weight = variable_get('camplus_pr_approvable_role_weight','');
+    if($debug) dpm($camplus_pr_approvable_role_weight);
+    // asort($camplus_pr_approvable_role_weight);
+    $camplus_pr_approvable_role_weight_flip = array_flip($camplus_pr_approvable_role_weight);
+    ksort($camplus_pr_approvable_role_weight_flip);
+    if($debug) dpm($camplus_pr_approvable_role_weight_flip);
+    $first_head = current($camplus_pr_approvable_role_weight_flip);//head first role, Department specific role. 
+    $first_roles = user_role_load_by_name($first_head);
+    //head: Department specific role. 需要判断是否属于该部门，即使IT部门的header吗？
+    if($role == $first_head) { //'head' usually the first level of approve.
+      //TODO: og check if user is the department head.
+      // og_get_memrship($group_type='node', $gid, $entity_type='node', $etid=$node->nid)
+      // $bi_nid = $node->og_group_ref[LANGUAGE_NONE][0]['target_id'];
+      $bi_nid = $node->field_budget_items[LANGUAGE_NONE][0]['target_id'];
+    
+      $department_nid = node_load($bi_nid)->field_parents_department[LANGUAGE_NONE][0]['target_id'];
+      $department_node = node_load($department_nid);
+      $flag_role_involved = $flag_role_involved && og_is_member('node', $department_nid, $entity_type = 'user', $user);
+      
+      $approve_status['permit_flag'] = $flag_role_involved;
+
+      if($debug) dvm($flag_role_involved,'true means the header is member of the right department has permission to vote');
+    }else { //if($role != $first_head)  // other roles, Non-Department specific.
+      if($debug) dpm($role,'my involed role '.$rid);
+      // $rid = user_role_load_by_name($role_name)->rid;
+      if($workflow_settings[$rid]) { //判定workflow是否设置该部门审核
+        if($rate_results['count'] == 0) {//no rates.
+          $approve_status['permit_flag'] = FALSE;
+          if($debug) dpm($role .' has no! right to check/approve AS the workflow settings,for no one before has rate.:没有权限审核，需等待之前的部门先审核。现在该PR没有任何人审核!');
+          return $approve_status;
+        }else {
+          //只要之前部门，有一个不同意，本部门将看不到rate
+          //之前部门，都同意，本部门才能看rate
+
+
+         
+          // delete the first role which is  Department specific
+
+          if($debug) dpm($camplus_pr_approvable_role_weight,'role_weight');
+          if($debug) dpm(array_filter($workflow_settings));
+          if($debug) dpm($first_roles,'fist');
+
+          $before_role_counts = 0;
+          foreach (array_filter($workflow_settings) as $w_rid => $value) {
+            if( $w_rid == $rid ){break;}
+              $before_role_counts ++;
+          }
+          $approve_status['before_role_counts'] = $before_role_counts;
+          $approve_status['approved_counts'] = $rate_results['options']['1'];
+          $approve_status['reject_counts'] = $rate_results['options']['-1'];
+          if($debug) dpm( $rid.' '.$role.' 上面还有'.$before_role_counts.'级部门&&已经有'.$rate_results['options']['1'].'个部门同意了。');
+          foreach (array_filter($workflow_settings) as $w_rid => $value) {
+            if($w_rid == $first_roles->rid) continue;
+            $other_roles = user_role_load($w_rid);
+            //之前部门
+            if ($camplus_pr_approvable_role_weight[$role] > $camplus_pr_approvable_role_weight[$other_roles->name]) {
+              if($debug) dpm( $rid.' '.$role.' 的上面还有de部门是 '.$w_rid .' '. $other_roles->name);
+              $approve_status['approve_level_before'] = array($w_rid=> $other_roles->name);
+              //只有1个，说明只要head部门审核了。
+              if($rate_results['count'] == 1) {
+                $approve_status['permit_flag'] = FALSE;
+                if($debug) dpm($role .' has no! right to check/approve AS the workflow settings,没有权限审核，需等待之前的部门先审核。现在该PR只有header审核guo!等待'.$other_roles->name.'审批');
+                return $approve_status;
+              }else {
+                //都选择同意&& 数量一致
+                if($rate_results['count'] == $rate_results['options']['1'] && $rate_results['count'] == $before_role_counts){
+                  // true
+                }else{
+                  $approve_status['permit_flag'] = FALSE;
+                  if($debug) dpm($role .' has no! right to check/approve AS the workflow settings,:没有权限审核，需等待之前的部门先审核!');
+                  return $approve_status;
+                }
+
+              }
+            }
+          }
+
+         if($debug)  dpm($role .' has right to check/approve,,rate_results: '.$rate_results['count']);
+
+        }
+        //TODO: and then check others before has approve or not.
+
+
+      }else{
+        $approve_status['permit_flag'] = FALSE;
+        // $flag_role_involved = FALSE;
+        if($debug) dpm($role .' has no! right to check/approve AS the workflow settings:没有在审核队列中');
+        return $approve_status;
+      }
+    }
+
+    $approve_status['permit_flag'] = $flag_role_involved;
+    return $approve_status;
+  }
+
+
+	if(0) {
+		
+  	//对每一级workflow的角色判断 如果一级尚未审批，则后续级别部门无权审批，及看不到vote
+
+
+
+  	if($flag_role_involved && isset($workflow_settings[$pr_approve_setting.'-workflow-'.$rid])) {
+  		//dpm('TRUE');
+  		return $workflow_settings[$pr_approve_setting.'-workflow-'.$rid];
+  	}else{	//dpm('FALSE');
+			return FALSE;
+  	}
+
+  	return $workflow_settings[$pr_approve_setting.'-workflow-'.$rid];
+
+	}
+
+
+}
+
+/**
+ * get the flag of Pr-Node approve rate-id
+ * @param $node the node which content type must be purchase_request
+ * @return $rate_id object the approve rate id
+ */
+function _camplus_pr_get_approve_rate($node) {
+  if($node->type != 'purchase_request') return FALSE;
+  $widgets = rate_get_active_widgets('node','purchase_request');// $node->type
+  foreach ($widgets as $widget_id => $widget) {
+    // 没有权限时，清楚rate
+    $widget->id = $widget_id;
+    if($widget->name == 'approve') {
+      return $widget;
+      break;
+    }
+  }
+  return FALSE;
+}

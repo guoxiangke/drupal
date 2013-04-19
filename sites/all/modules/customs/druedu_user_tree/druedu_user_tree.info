@@ -1,0 +1,9 @@
+name = Druedu user tree management
+description = og group tree(level) management for druedu.
+core = 7.x
+package = Druedu
+version = "7.x-1.x-dev"
+configure = admin/people/advanced_membership_management/add/school_group
+;dependencies[] = druedu_user
+dependencies[] = phpexcel
+;druedu_user
