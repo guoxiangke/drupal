@@ -115,8 +115,6 @@ function uuke_unionpay_notify(){
 	echo 'sucess';
 }
 function uuke_unionpay_return() {
-
-  module_load_include('inc', 'uuke_unionpay', 'quickpay_conf');
   module_load_include('inc', 'uuke_unionpay', 'quickpay_service');
 	try {
 	    $response = new quickpay_service($_POST, quickpay_conf::RESPONSE);
@@ -126,32 +124,46 @@ function uuke_unionpay_return() {
 	    }
 	    $arr_ret = $response->get_args();
       $request = $arr_ret;
-	    dpm($_POST,'$_POST');
-	    dpm($arr_ret,'$arr_ret');
+	    // dpm($_POST,'$_POST');
+	    // dpm($arr_ret,'$arr_ret');
 	    //告诉用户交易完成
       $node = node_load($arr_ret['orderNumber']-0); //订单节点更新 000000036
+      //如果已经查询过订单，返回时不用再更新了
+      $product_nid = $node->field_uuke_alipay_product_nid[LANGUAGE_NONE][0]['target_id'];
+      if($node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'] == '支付成功' &&  $node->title == $arr_ret['orderNumber'] + $node->created)  {
+        drupal_goto("node/$product_nid");
+      }
       // 201304181451005901392 qid 银联交易唯一订单号
       $out_trade_no = $request['qid'];
+
       $node ->field_uuke_alipay_trade_no[LANGUAGE_NONE][0]['value'] = $out_trade_no;
       
-      $old_status = $node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value']; //pending
-      $new_status = $request['respMsg'];//支付成功
-      if($old_status != $new_status) {//uuke_alipay_trade_status_to_chinese($request['trade_status'])
-        $node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'] = 'TRADE_SUCCESS';//支付成功 uuke_alipay_trade_status_to_chinese($request['trade_status'])
-        watchdog('uuke_alipay_notify',$out_trade_no.'交易状态改变 '.$old_status.'=>'.$new_status);
-      }
+      // $old_status = $node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value']; //pending
+      // $new_status = $request['respMsg'];//支付成功
+      // if($old_status != $new_status) {//uuke_alipay_trade_status_to_chinese($request['trade_status'])
+      //   $node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'] = 'TRADE_SUCCESS';//支付成功 uuke_alipay_trade_status_to_chinese($request['trade_status'])
+      //   watchdog('uuke_alipay_notify',$out_trade_no.'交易状态改变 '.$old_status.'=>'.$new_status);
+      // }
+
+      $node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'] = $request['respMsg'];//'TRADE_SUCCESS';//支付成功 
+
       $node->field_uuke_alipay_return[LANGUAGE_NONE][] = array(
         'value' => serialize($request+$arr_ret),//$_GET
       );
+
+      $node->title = $arr_ret['orderNumber'] + $node->created;
+      
+      $order->field_uuke_pay_method[LANGUAGE_NONE][0]['value'] = '2'; //unionpay 
+      // $order ->title = $out_trade_no + $order ->created;
       node_save($node);
-      drupal_set_message(t("订单 {$arr_ret['orderNumber']} 支付成功,请积极联系卖家以便完成交易。"), 'status', FALSE);
-	    drupal_goto("node/$node->nid");
+      drupal_set_message(t("订单 {$node ->title} 支付成功,请积极联系卖家以便完成交易。"), 'status', FALSE);
+      drupal_goto("node/$product_nid");
 
 	}
 	catch(Exception $exp) {
 	    $str = var_export($exp, true);
       watchdog('uuke_unionpay error', $str, array(), WATCHDOG_NOTICE, 'link');
       drupal_set_message(t('返回数据错误13041801，请与商家联系!').$str, 'status', FALSE);
-      drupal_goto("node/$node->nid");
+      drupal_goto("node/$product_nid");
 	}
 }

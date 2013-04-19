@@ -167,36 +167,36 @@ class quickpay_conf
     static $sign_ignore_params = array(
         "bank",
     );
+    static function init()
+        {
+            self::$timezone  = variable_get('date_default_timezone',"Asia/Shanghai");
+            self::$security_key  = variable_get('uuke_unionpay_security_key',"88888888");
+            self::$pay_params['merId' ]  =variable_get('uuke_unionpay_merId','105550149170027'); //商户填写;
+            // self::$pay_params['acqCode']  =  variable_get('uuke_unionpay_acqCode',''); //收单机构填写;
+            // self::$pay_params['merCode']  = variable_get('uuke_unionpay_merCode','');
+            // self::$pay_params['merAbbr']  = variable_get('uuke_unionpay_merAbbr','');//商户名称
+            switch (variable_get('uuke_unionpay_environment', '1')) {
+                case '2':
+                    //预上线环境
+                    self::$front_pay_url   = "https://www.epay.lxdns.com/UpopWeb/api/Pay.action";
+                    self::$back_pay_url    = "https://www.epay.lxdns.com/UpopWeb/api/BSPay.action";
+                    self::$query_url       = "https://www.epay.lxdns.com/UpopWeb/api/Query.action";
+                    break;
+                case '3':
+                    //线上环境
+                    self::$front_pay_url   = "https://unionpaysecure.com/api/Pay.action";
+                    self::$back_pay_url    = "https://besvr.unionpaysecure.com/api/BSPay.action";
+                    self::$query_url       = "https://query.unionpaysecure.com/api/Query.action";
+                    break;
+                case '1': 
+                default://测试环境
+                    self::$front_pay_url   = "http://58.246.226.99/UpopWeb/api/Pay.action";
+                    self::$back_pay_url    = "http://58.246.226.99/UpopWeb/api/BSPay.action";
+                    self::$query_url       = "http://58.246.226.99/UpopWeb/api/Query.action";
+                    break;
+            }
+        }
 }
-// function init()
-//     {
-//         self::$timezone  = variable_get('date_default_timezone',"Asia/Shanghai");
-//         self::$security_key  = variable_get('uuke_unionpay_security_key',"88888888");
-//         self::$pay_params['merId' ]  =variable_get('uuke_unionpay_merId','105550149170027'); //商户填写;
-//         // self::$pay_params['acqCode']  =  variable_get('uuke_unionpay_acqCode',''); //收单机构填写;
-//         // self::$pay_params['merCode']  = variable_get('uuke_unionpay_merCode','');
-//         // self::$pay_params['merAbbr']  = variable_get('uuke_unionpay_merAbbr','');//商户名称
-//         switch (variable_get('uuke_unionpay_environment', '1')) {
-//             case '2':
-//                 //预上线环境
-//                 self::$front_pay_url   = "https://www.epay.lxdns.com/UpopWeb/api/Pay.action";
-//                 self::$back_pay_url    = "https://www.epay.lxdns.com/UpopWeb/api/BSPay.action";
-//                 self::$query_url       = "https://www.epay.lxdns.com/UpopWeb/api/Query.action";
-//                 break;
-//             case '3':
-//                 //线上环境
-//                 self::$front_pay_url   = "https://unionpaysecure.com/api/Pay.action";
-//                 self::$back_pay_url    = "https://besvr.unionpaysecure.com/api/BSPay.action";
-//                 self::$query_url       = "https://query.unionpaysecure.com/api/Query.action";
-//                 break;
-//             case '1': 
-//             default://测试环境
-//                 self::$front_pay_url   = "http://58.246.226.99/UpopWeb/api/Pay.action";
-//                 self::$back_pay_url    = "http://58.246.226.99/UpopWeb/api/BSPay.action";
-//                 self::$query_url       = "http://58.246.226.99/UpopWeb/api/Query.action";
-//                 break;
-//         }
-//     }
 
 // quickpay_conf::init();
 ?>

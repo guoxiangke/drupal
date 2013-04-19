@@ -275,13 +275,13 @@ function uuke_alipay_node_view($node, $view_mode, $langcode) {
 					$pay_link = 'node/'.$node->nid.'/alipay';
 					$pay_type = 'Alipay';
 				  $out_trade_no = str_pad($order_nid, 9, "0", STR_PAD_LEFT);//118854555 //000000001
-				  dpm($trade_status);
+			
 					if($trade_status == '等待付款' || $trade_status == '等待处理'){
 						drupal_set_message(t('您的"'.$node->title.'"订单'.$out_trade_no.'已生成，请点击'.l($pay_type.'付款',$pay_link).'跳转到支付页面。订单状态为：'.uuke_alipay_trade_status_to_chinese($trade_status)) );
 						// drupal_set_message(t('您的'.$node->title.'订单'.l($out_trade_no,'node/'.$order_nid).'已生成，请点击'.l('付款',$pay_link).'跳转到支付页面。订单状态为：'.uuke_alipay_trade_status_to_chinese($trade_status)) );
 						$show = TRUE;
 					}else{
-						drupal_set_message('您的'.$node->title.'订单'.$out_trade_no.'付款成功！已购买！');
+						// drupal_set_message('您的'.$node->title.'订单'.$out_trade_no.'付款成功！已购买！');
 						// drupal_set_message('您的'.$node->title.'订单'.l($out_trade_no,'node/'.$order_nid).'付款成功！ 状态为：'.uuke_alipay_trade_status_to_chinese($trade_status));
 					}
 				}else{
@@ -291,7 +291,7 @@ function uuke_alipay_node_view($node, $view_mode, $langcode) {
 					$base_path = url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q=');
 					$node->content['alipay'] =  array(
 						'#markup' => t('Pay for it|paid|installed'),
-						'#prefix' => '<a class= "button" href="'.$base_path.'node/'.$node->nid.'/alipay">',
+						'#prefix' => '<a class= "button" href="'.$base_path.'node/'.$node->nid.'/alipay" target="_blank">',
 						'#suffix' => '</a>', 
 						'#weight' => -19,
 					);
@@ -368,7 +368,7 @@ function uuke_alipay_order_save($request) {
 	}
 	if($order_node = node_submit($order_node)) { // Prepare node for saving
     node_save($order_node);
-    drupal_set_message(t("订单:" . l($order_node->title.':'.$product_node->title,'node/'.$order_node->nid) . " 已更新\n"), 'status');
+    drupal_set_message(t("订单:" . l($order_node->title.':'.$product_node->title,'node/'.$order_node->nid) . " 已处理\n"), 'status');
     return $order_node;
 	}else{
 		drupal_set_message(t('fiald to update order node'), 'error');

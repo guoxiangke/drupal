@@ -305,9 +305,10 @@ function uuke_alipay_return() {
   $sign_type = "MD5";
   $_input_charset = 'UTF-8';
   $transport = 'https';
+  module_load_include('inc', 'uuke_alipay', 'uuke_alipay_service');
   $alipay = new alipay_notify($partner,$security_code,$sign_type,$_input_charset,$transport);
   $verify_result = $alipay->return_verify();
-  dpm($_GET,'$_GET');
+  // dpm($_GET,'$_GET');
   if($verify_result) {    //认证合格
     if($trade_status == 'WAIT_SELLER_SEND_GOODS') {
       // create a now order node begin
