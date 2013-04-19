@@ -198,5 +198,5 @@ class quickpay_conf
         }
 }
 
-// quickpay_conf::init();
+quickpay_conf::init();
 ?>
