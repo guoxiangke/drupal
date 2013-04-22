@@ -209,21 +209,21 @@ function uuke_alipay_notify() {
     $price =  $request['price'];
     $quantity =  $request['quantity'];
     $trade_status_array = array(
-      'WAIT_BUYER_PAY',
+      // 'WAIT_BUYER_PAY',
       'TRADE_FINISHED',
       'TRADE_SUCCESS',
       'WAIT_SELLER_SEND_GOODS',
       'WAIT_BUYER_CONFIRM_GOODS',
-      'TRADE_CLOSED',
+      // 'TRADE_CLOSED',
     );
-    if(!in_array($trade_status,$trade_status_array)) {
-        watchdog('uc_alipay_notify', $trade_status.':验证失败1,状态未知 out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
-        watchdog('uc_alipay_notify_called at4 验证失败1,状态未知 ', REQUEST_TIME);
-        echo "fail1";
-        return;
-        //log_result ("verify_failed");
+    if(in_array($trade_status,$trade_status_array)) {
+      //执行自动发货 begin
+      uuke_alipay_auto_send_goods($trade_no,$out_trade_no);
+      //执行自动发货 end
     }else{
       watchdog('unknow status', $trade_status, array(), WATCHDOG_NOTICE, 'link');
+      echo "success";//不再接收此通知 //实际上是error
+      return;
     }
     // $receive_name    =$request['receive_name'];    //获取收货人姓名
     // $receive_address =$request['receive_address']; //获取收货人地址
@@ -235,16 +235,14 @@ function uuke_alipay_notify() {
        WAIT_BUYER_PAY(表示等待买家付款);
        TRADE_FINISHED(表示交易已经成功结束);
       */
-    //执行自动发货 begin
-    uuke_alipay_auto_send_goods($trade_no,$out_trade_no);
-    //执行自动发货 end
+
     //更新订单
     $order = uuke_alipay_order_save($request,$order_node->nid);
-    watchdog('123更新订单', 'here!', array(), WATCHDOG_NOTICE, 'link');
+    watchdog('订单'.$order_node->nid.'更新', $product_node->title, array(), WATCHDOG_NOTICE, 'link');
     echo 'success';return;
   }else {    //认证不合格
     watchdog('uc_alipay_notify', $trade_status.':认证不合格,out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
-    echo "fail23";return;
+    echo "fail";return;
     //log_result ("verify_failed");
   }
 }
