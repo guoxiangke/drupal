@@ -192,7 +192,10 @@ function uuke_alipay_content_types_setting_form_submit($form, &$form_state){
     if($verify_result) {  //认证合格
      //获取支付宝的反馈参数
       $out_trade_no   = $_POST['out_trade_no'];   //获取支付宝传递过来的订单号
-      $order_node = node_load($out_trade_no-0);
+      $order_nid = $out_trade_no - TRADE_ADD;
+      $order_node = node_load((int) $order_nid);
+  
+      // $order_node = node_load($out_trade_no-20130420802);
       $product_node = node_load($order_node->field_uuke_alipay_product_nid[LANGUAGE_NONE][0]['target_id']);
       $nid = $order_node->nid;
       $uid = $order_node->uid;
@@ -241,7 +244,7 @@ function uuke_alipay_content_types_setting_form_submit($form, &$form_state){
       //执行自动发货 end
       //更新订单
       $request = $_POST;
-      $order = uuke_alipay_order_save($request);
+      $order = uuke_alipay_order_save($request,$order_node->nid);
       // $query = db_select('uuke_alipay', 'h');
       // $result = $query
       //   ->fields('h', array('uid','nid','trade_no','status'))
@@ -294,12 +297,13 @@ function uuke_alipay_content_types_setting_form_submit($form, &$form_state){
 function uuke_alipay_return() {
   //获取支付宝的反馈参数
   $out_trade_no   = $_GET['out_trade_no'];   //获取支付宝传递过来的订单号
-  $order_node = node_load($out_trade_no-0);
+  $order_nid = $out_trade_no - TRADE_ADD;
+  $order_node = node_load((int) $order_nid);
+
   $product_node = node_load($order_node->field_uuke_alipay_product_nid[LANGUAGE_NONE][0]['target_id']);
   $trade_no =  $_GET['trade_no'];
   $trade_status = $_GET['trade_status'];
   // $body = $_GET['body'];
-
   $partner = variable_get('uuke_alipay_partner', '');
   $security_code = variable_get('uuke_alipay_key', '');
   $sign_type = "MD5";
@@ -308,23 +312,24 @@ function uuke_alipay_return() {
   module_load_include('inc', 'uuke_alipay', 'uuke_alipay_service');
   $alipay = new alipay_notify($partner,$security_code,$sign_type,$_input_charset,$transport);
   $verify_result = $alipay->return_verify();
+
   // dpm($_GET,'$_GET');
   if($verify_result) {    //认证合格
     if($trade_status == 'WAIT_SELLER_SEND_GOODS') {
       // create a now order node begin
       $request = $_GET;
 
-      $order = uuke_alipay_order_save($request);
+      $order = uuke_alipay_order_save($request,$order_node->nid);
       //执行自动发货 begin
       uuke_alipay_auto_send_goods($trade_no,$out_trade_no);
       //执行自动发货 end
       // create a now order node end
-      drupal_set_message(t('付款成功!.'), 'status', FALSE);
+      drupal_set_message(t('订单'.$product_node ->title.':'.$order_node->title.' 支付成功,请积极联系卖家以便完成交易。'), 'status', FALSE);
       drupal_goto('node/'.$product_node->nid);
-  }elseif($trade_status == 'TRADE_FINISHED' || $trade_status == 'TRADE_SUCCESS') {
+    }elseif($trade_status == 'TRADE_FINISHED' || $trade_status == 'TRADE_SUCCESS' || $trade_status=='WAIT_BUYER_CONFIRM_GOODS') {
     //这里放入你自定义代码,比如根据不同的trade_status进行不同操作
     //log_result("verify_success"); 
-      drupal_set_message(t('已购买，请点此下载安装App.'), 'status', FALSE);
+      // drupal_set_message(t('已购买，请点此下载安装App.'), 'status', FALSE);
       drupal_goto('node/'.$product_node->nid);
     }else{
       drupal_set_message(t('unknow error: Please conneect admin. trade_status:'.$_GET['trade_status']), 'warning', FALSE);

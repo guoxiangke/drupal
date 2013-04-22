@@ -152,7 +152,7 @@ function uuke_unionpay_for_node($product_node) {
 	$param['backEndUrl']            = $base_path."unionpay/notify";     //后台回调URL
 	// 可填空字段
 	$param['commodityUrl']          = $base_path.'node/'.$product_node->nid;  //商品URL
-	$param['commodityName']         = $product_node->title;   //商品名称
+	$param['commodityName']         = $product_node->type;//check_markup($product_node->title);   //商品名称 不可以有特殊符号
 	$param['commodityUnitPrice']    = $price*100;        //商品单价
 	//商品数量
 	$quantity = "1";
