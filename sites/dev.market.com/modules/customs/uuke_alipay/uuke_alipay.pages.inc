@@ -190,7 +190,7 @@ function uuke_alipay_notify() {
   module_load_include('inc', 'uuke_alipay', 'uuke_alipay_service');
   $alipay = new alipay_notify($partner,$security_code,$sign_type,$_input_charset,$transport);
   $verify_result = $alipay->notify_verify();
-  watchdog('verify_result=', $verify_result);
+  watchdog('verify_result1=', $verify_result);
   $out_trade_no   = $request['out_trade_no'];   //获取支付宝传递过来的订单号
   $trade_status = $request['trade_status'];//WAIT_BUYER_PAY
   $trade_no =  $request['trade_no'];
@@ -198,7 +198,7 @@ function uuke_alipay_notify() {
     //获取支付宝的反馈参数
     $order_nid = $out_trade_no - TRADE_ADD;
     $order_node = node_load((int) $order_nid);
-
+    watchdog('order_node-nid', $order_nid.'<pre>'.print_r($order_node->field_uuke_alipay_product_nid,TRUE), array(), WATCHDOG_NOTICE, 'link');
     // $order_node = node_load($out_trade_no-20130420802);
     $product_node = node_load($order_node->field_uuke_alipay_product_nid[LANGUAGE_NONE][0]['target_id']);
     $nid = $order_node->nid;
@@ -235,6 +235,7 @@ function uuke_alipay_notify() {
        WAIT_BUYER_PAY(表示等待买家付款);
        TRADE_FINISHED(表示交易已经成功结束);
       */
+  watchdog('verify_result2=', $verify_result);
 
     //更新订单
     $order = uuke_alipay_order_save($request,$order_node->nid);
