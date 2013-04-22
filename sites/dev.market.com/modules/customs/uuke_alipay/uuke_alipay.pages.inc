@@ -198,11 +198,12 @@ function uuke_alipay_notify() {
     //获取支付宝的反馈参数
     $order_nid = $out_trade_no - TRADE_ADD; //20130420804-20130420802
     $order_node = node_load((int) $order_nid);
-    watchdog('order_node-nid', $order_nid.'<pre>'.print_r($order_node->field_uuke_alipay_product_nid,TRUE), array(), WATCHDOG_NOTICE, 'link');
+  
     // $order_node = node_load($out_trade_no-20130420802);
     // $product_nid = $order_node->field_uuke_alipay_product_nid[LANGUAGE_NONE][0]['target_id'];
     // $product_node = node_load((int)$product_nid);
     $nid = $order_node->nid;
+      watchdog('order_node-nid', $order_nid.'<pre>'.print_r($order_node->field_uuke_alipay_product_nid,TRUE), array(), WATCHDOG_NOTICE, 'link');
     $buy_timestamp = $order_node->created;
     
     $total_fee     = $request['total_fee'];      //获取支付宝传递过来的总价格
@@ -219,6 +220,7 @@ function uuke_alipay_notify() {
     if(in_array($trade_status,$trade_status_array)) {
       //执行自动发货 begin
       uuke_alipay_auto_send_goods($trade_no,$out_trade_no);
+      watchdog('执行自动发货', '执行自动发货', array(), WATCHDOG_NOTICE, 'link');
       //执行自动发货 end
     }
     // else{
