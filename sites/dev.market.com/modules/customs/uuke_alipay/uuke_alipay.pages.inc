@@ -181,19 +181,16 @@ function uuke_alipay_notify() {
   $sign_type = "MD5";
   $_input_charset = 'UTF-8';
   $transport = 'https';
-  watchdog('uc_alipay_notify_called at1', REQUEST_TIME);
   watchdog('uc_alipay_notify_called at11', '<pre>'.print_r($request,TRUE), array(), WATCHDOG_NOTICE, 'link');
   if(!isset($request['out_trade_no'])) {
     watchdog('uc_alipay_notify_called at2', REQUEST_TIME);      
     echo 'fail';
     return;
   }
-  watchdog('uc_alipay_notify_called at111 verify_result=','verify_result');
   module_load_include('inc', 'uuke_alipay', 'uuke_alipay_service');
   $alipay = new alipay_notify($partner,$security_code,$sign_type,$_input_charset,$transport);
-  watchdog('uc_alipay_notify_called at12 verify_result=','verify_result');
   $verify_result = $alipay->notify_verify();
-  watchdog('uc_alipay_notify_called at3 verify_result=', $verify_result);
+  watchdog('verify_result=', $verify_result);
   $out_trade_no   = $request['out_trade_no'];   //获取支付宝传递过来的订单号
   $trade_status = $request['trade_status'];//WAIT_BUYER_PAY
   $trade_no =  $request['trade_no'];
@@ -207,14 +204,6 @@ function uuke_alipay_notify() {
     $nid = $order_node->nid;
     $uid = $order_node->uid;
     $buy_timestamp = $order_node->created;
-
-    // preg_match('/n\d+/', $out_trade_no, $matches, PREG_OFFSET_CAPTURE);
-   //  $nid = str_replace('n', '',$matches[0][0]);//order_id=200 将前面的11位删除 1365500773_n200_u1  n\d+
-   //  $product_node = node_load($nid);//product_type
-    // preg_match('/u\d+/', $out_trade_no, $matches, PREG_OFFSET_CAPTURE);
-   //  $uid = str_replace('u', '',$matches[0][0]);//200 将前面的11位删除 1365500773_n200_u1  n\d+
-    // preg_match('/\d+/', $out_trade_no, $matches, PREG_OFFSET_CAPTURE);
-    // $buy_timestamp = $matches[0][0];//下单时间
     
     $total_fee     = $request['total_fee'];      //获取支付宝传递过来的总价格
     $price =  $request['price'];
@@ -233,6 +222,8 @@ function uuke_alipay_notify() {
         echo "fail1";
         return;
         //log_result ("verify_failed");
+    }else{
+      watchdog('unknow status', $trade_status, array(), WATCHDOG_NOTICE, 'link');
     }
     // $receive_name    =$request['receive_name'];    //获取收货人姓名
     // $receive_address =$request['receive_address']; //获取收货人地址
