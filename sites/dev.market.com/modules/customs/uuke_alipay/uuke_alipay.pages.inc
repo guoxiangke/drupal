@@ -181,6 +181,7 @@ function uuke_alipay_content_types_setting_form_submit($form, &$form_state){
     $_input_charset = 'UTF-8';
     $transport = 'https';
     watchdog('uc_alipay_notify_called at1', REQUEST_TIME);
+    watchdog('uc_alipay_notify_called at11', '<pre>'.print_r($_POST,TRUE), array(), WATCHDOG_NOTICE, 'link');
     if(!isset($_POST['out_trade_no'])) {
       echo 'fail';
       watchdog('uc_alipay_notify_called at2', REQUEST_TIME);
@@ -194,7 +195,7 @@ function uuke_alipay_content_types_setting_form_submit($form, &$form_state){
       $out_trade_no   = $_POST['out_trade_no'];   //获取支付宝传递过来的订单号
       $order_nid = $out_trade_no - TRADE_ADD;
       $order_node = node_load((int) $order_nid);
-  
+
       // $order_node = node_load($out_trade_no-20130420802);
       $product_node = node_load($order_node->field_uuke_alipay_product_nid[LANGUAGE_NONE][0]['target_id']);
       $nid = $order_node->nid;
@@ -296,6 +297,7 @@ function uuke_alipay_content_types_setting_form_submit($form, &$form_state){
 
 function uuke_alipay_return() {
   //获取支付宝的反馈参数
+  if(!isset($_GET['out_trade_no'])) return 'wrong!';
   $out_trade_no   = $_GET['out_trade_no'];   //获取支付宝传递过来的订单号
   $order_nid = $out_trade_no - TRADE_ADD;
   $order_node = node_load((int) $order_nid);
