@@ -200,7 +200,8 @@ function uuke_alipay_notify() {
     $order_node = node_load((int) $order_nid);
     watchdog('order_node-nid', $order_nid.'<pre>'.print_r($order_node->field_uuke_alipay_product_nid,TRUE), array(), WATCHDOG_NOTICE, 'link');
     // $order_node = node_load($out_trade_no-20130420802);
-    $product_node = node_load($order_node->field_uuke_alipay_product_nid[LANGUAGE_NONE][0]['target_id']);
+    // $product_nid = $order_node->field_uuke_alipay_product_nid[LANGUAGE_NONE][0]['target_id'];
+    // $product_node = node_load((int)$product_nid);
     $nid = $order_node->nid;
     $uid = $order_node->uid;
     $buy_timestamp = $order_node->created;
@@ -220,11 +221,12 @@ function uuke_alipay_notify() {
       //执行自动发货 begin
       uuke_alipay_auto_send_goods($trade_no,$out_trade_no);
       //执行自动发货 end
-    }else{
-      watchdog('unknow status', $trade_status, array(), WATCHDOG_NOTICE, 'link');
-      echo "success";//不再接收此通知 //实际上是error
-      return;
     }
+    // else{
+      watchdog('unknow status'.$order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'], $trade_status, array(), WATCHDOG_NOTICE, 'link');
+    //   echo "success";//不再接收此通知 //实际上是error
+    //   return;
+    // }
     // $receive_name    =$request['receive_name'];    //获取收货人姓名
     // $receive_address =$request['receive_address']; //获取收货人地址
     // $receive_zip     =$request['receive_zip'];     //获取收货人邮编
@@ -235,11 +237,13 @@ function uuke_alipay_notify() {
        WAIT_BUYER_PAY(表示等待买家付款);
        TRADE_FINISHED(表示交易已经成功结束);
       */
-  watchdog('verify_result2=', $verify_result);
 
     //更新订单
-    $order = uuke_alipay_order_save($request,$order_node->nid);
-    watchdog('订单'.$order_node->nid.'更新', $product_node->title, array(), WATCHDOG_NOTICE, 'link');
+    if($order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'] != uuke_alipay_trade_status_to_chinese($trade_status)) {
+      $order = uuke_alipay_order_save($request,$order_node->nid);
+      watchdog('订单'.$order_node->nid.'更新',' $product_node->title', array(), WATCHDOG_NOTICE, 'link');
+    }
+   
     echo 'success';return;
   }else {    //认证不合格
     watchdog('uc_alipay_notify', $trade_status.':认证不合格,out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
