@@ -196,7 +196,7 @@ function uuke_alipay_notify() {
   $trade_no =  $request['trade_no'];
   if($verify_result) {  //认证合格
     //获取支付宝的反馈参数
-    $order_nid = $out_trade_no - TRADE_ADD;
+    $order_nid = $out_trade_no - TRADE_ADD; //20130420804-20130420802
     $order_node = node_load((int) $order_nid);
     watchdog('order_node-nid', $order_nid.'<pre>'.print_r($order_node->field_uuke_alipay_product_nid,TRUE), array(), WATCHDOG_NOTICE, 'link');
     // $order_node = node_load($out_trade_no-20130420802);
