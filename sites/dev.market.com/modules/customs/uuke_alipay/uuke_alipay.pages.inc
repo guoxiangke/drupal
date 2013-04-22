@@ -187,7 +187,9 @@ function uuke_alipay_content_types_setting_form_submit($form, &$form_state){
       echo 'fail';
       return;
     }
+     watchdog('uc_alipay_notify_called at111 verify_result=');
     $alipay = new alipay_notify($partner,$security_code,$sign_type,$_input_charset,$transport);
+    watchdog('uc_alipay_notify_called at12 verify_result=');
     $verify_result = $alipay->notify_verify();
     watchdog('uc_alipay_notify_called at3 verify_result=', $verify_result);
     if($verify_result) {  //认证合格
