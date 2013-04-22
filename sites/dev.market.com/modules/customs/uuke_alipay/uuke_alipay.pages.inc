@@ -315,9 +315,9 @@ function uuke_alipay_return() {
       $request = $_GET;
 
       $order = uuke_alipay_order_save($request);
-  //执行自动发货 begin
-  uuke_alipay_auto_send_goods($trade_no,$out_trade_no);
-  //执行自动发货 end
+      //执行自动发货 begin
+      uuke_alipay_auto_send_goods($trade_no,$out_trade_no);
+      //执行自动发货 end
       // create a now order node end
       drupal_set_message(t('付款成功!.'), 'status', FALSE);
       drupal_goto('node/'.$product_node->nid);
