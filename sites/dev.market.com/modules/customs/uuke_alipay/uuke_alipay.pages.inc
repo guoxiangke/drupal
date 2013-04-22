@@ -203,7 +203,6 @@ function uuke_alipay_notify() {
     // $product_nid = $order_node->field_uuke_alipay_product_nid[LANGUAGE_NONE][0]['target_id'];
     // $product_node = node_load((int)$product_nid);
     $nid = $order_node->nid;
-    $uid = $order_node->uid;
     $buy_timestamp = $order_node->created;
     
     $total_fee     = $request['total_fee'];      //获取支付宝传递过来的总价格
