@@ -120,12 +120,12 @@ class alipay_service {
     
     function notify_verify() {   
       if($this->transport == "https") {
-        $veryfy_url = $this->gateway. "service=notify_verify" ."&partner=" .$this->partner. "&notify_id=".$_POST["notify_id"];
+        $veryfy_url = $this->gateway. "service=notify_verify" ."&partner=" .$this->partner. "&notify_id=".$_REQUEST["notify_id"];
       } else {
-        $veryfy_url = $this->gateway. "partner=".$this->partner."&notify_id=".$_POST["notify_id"];
+        $veryfy_url = $this->gateway. "partner=".$this->partner."&notify_id=".$_REQUEST["notify_id"];
       }
       $veryfy_result = $this->get_verify($veryfy_url);
-      $post          = $this->para_filter($_POST);
+      $post          = $this->para_filter($_REQUEST);
       $sort_post     = $this->arg_sort($post);
       $arg ='';
       while (list ($key, $val) = each ($sort_post)) {
@@ -134,7 +134,7 @@ class alipay_service {
       $prestr = substr($arg,0,count($arg)-2);  //去掉最后一个&号
       $this->mysign = $this->sign($prestr.$this->security_code);
       //log_result("notify_url_log:sign=".$_POST["sign"]."&mysign=".$this->mysign."&".$this->charset_decode(implode(",",$_POST),$this->_input_charset ));
-      if (preg_match("/true$/",$veryfy_result) && $this->mysign == $_POST["sign"])  {
+      if (preg_match("/true$/",$veryfy_result) && $this->mysign == $_REQUEST["sign"])  {
         return true;
       } else return false;
     }

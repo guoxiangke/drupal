@@ -173,89 +173,90 @@ function uuke_alipay_content_types_setting_form_submit($form, &$form_state){
    *zhupou.cn制作
    */
 
-  function uuke_alipay_notify() {
-    //$output = "uc_alipay_return test";
-    $partner = variable_get('uuke_alipay_partner', '');
-    $security_code = variable_get('uuke_alipay_key', '');
-    $sign_type = "MD5";
-    $_input_charset = 'UTF-8';
-    $transport = 'https';
-    watchdog('uc_alipay_notify_called at1', REQUEST_TIME);
-    watchdog('uc_alipay_notify_called at11', '<pre>'.print_r($_POST,TRUE), array(), WATCHDOG_NOTICE, 'link');
-    if(!isset($_POST['out_trade_no'])) {
-      watchdog('uc_alipay_notify_called at2', REQUEST_TIME);      
-      echo 'fail';
-      return;
-    }
-     watchdog('uc_alipay_notify_called at111 verify_result=','verify_result');
-    $alipay = new alipay_notify($partner,$security_code,$sign_type,$_input_charset,$transport);
-    watchdog('uc_alipay_notify_called at12 verify_result=','verify_result');
-    $verify_result = $alipay->notify_verify();
-    watchdog('uc_alipay_notify_called at3 verify_result=', $verify_result);
-    if($verify_result) {  //认证合格
-     //获取支付宝的反馈参数
-      $out_trade_no   = $_POST['out_trade_no'];   //获取支付宝传递过来的订单号
-      $order_nid = $out_trade_no - TRADE_ADD;
-      $order_node = node_load((int) $order_nid);
-
-      // $order_node = node_load($out_trade_no-20130420802);
-      $product_node = node_load($order_node->field_uuke_alipay_product_nid[LANGUAGE_NONE][0]['target_id']);
-      $nid = $order_node->nid;
-      $uid = $order_node->uid;
-      $buy_timestamp = $order_node->created;
-
-      // preg_match('/n\d+/', $out_trade_no, $matches, PREG_OFFSET_CAPTURE);
-     //  $nid = str_replace('n', '',$matches[0][0]);//order_id=200 将前面的11位删除 1365500773_n200_u1  n\d+
-     //  $product_node = node_load($nid);//product_type
-      // preg_match('/u\d+/', $out_trade_no, $matches, PREG_OFFSET_CAPTURE);
-     //  $uid = str_replace('u', '',$matches[0][0]);//200 将前面的11位删除 1365500773_n200_u1  n\d+
-      // preg_match('/\d+/', $out_trade_no, $matches, PREG_OFFSET_CAPTURE);
-      // $buy_timestamp = $matches[0][0];//下单时间
-      
-      $trade_no =  $_POST['trade_no'];
-      $total_fee     = $_POST['total_fee'];      //获取支付宝传递过来的总价格
-      $price =  $_POST['price'];
-      $quantity =  $_POST['quantity'];
-      $trade_status = $_POST['trade_status'];//WAIT_BUYER_PAY
-      $trade_status_array = array(
-        'WAIT_BUYER_PAY',
-        'TRADE_FINISHED',
-        'TRADE_SUCCESS',
-        'WAIT_SELLER_SEND_GOODS',
-        'WAIT_BUYER_CONFIRM_GOODS',
-        'TRADE_CLOSED',
-      );
-      if(!in_array($trade_status,$trade_status_array)) {
-          watchdog('uc_alipay_notify', $trade_status.':验证失败1,状态未知 out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
-          watchdog('uc_alipay_notify_called at4 验证失败1,状态未知 ', REQUEST_TIME);
-          echo "fail";
-          return;
-          //log_result ("verify_failed");
-      }
-      // $receive_name    =$_POST['receive_name'];    //获取收货人姓名
-      // $receive_address =$_POST['receive_address']; //获取收货人地址
-      // $receive_zip     =$_POST['receive_zip'];     //获取收货人邮编
-      // $receive_phone   =$_POST['receive_phone'];   //获取收货人电话
-      // $receive_mobile  =$_POST['receive_mobile'];  //获取收货人手机
-      /* 
-         获取支付宝反馈过来的状态,根据不同的状态来更新数据库 
-         WAIT_BUYER_PAY(表示等待买家付款);
-         TRADE_FINISHED(表示交易已经成功结束);
-        */
-      //执行自动发货 begin
-      uuke_alipay_auto_send_goods($trade_no,$out_trade_no);
-      //执行自动发货 end
-      //更新订单
-      $request = $_POST;
-      $order = uuke_alipay_order_save($request,$order_node->nid);
-      watchdog('123更新订单', 'here!', array(), WATCHDOG_NOTICE, 'link');
-      echo 'success';return;
-    }else {    //认证不合格
-      watchdog('uc_alipay_notify', $trade_status.':认证不合格,out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
-      echo "fail";return;
-      //log_result ("verify_failed");
-    }
+function uuke_alipay_notify() {
+  $request = $_REQUEST;//_POST
+  //$output = "uc_alipay_return test";
+  $partner = variable_get('uuke_alipay_partner', '');
+  $security_code = variable_get('uuke_alipay_key', '');
+  $sign_type = "MD5";
+  $_input_charset = 'UTF-8';
+  $transport = 'https';
+  watchdog('uc_alipay_notify_called at1', REQUEST_TIME);
+  watchdog('uc_alipay_notify_called at11', '<pre>'.print_r($request,TRUE), array(), WATCHDOG_NOTICE, 'link');
+  if(!isset($request['out_trade_no'])) {
+    watchdog('uc_alipay_notify_called at2', REQUEST_TIME);      
+    echo 'fail';
+    return;
   }
+  watchdog('uc_alipay_notify_called at111 verify_result=','verify_result');
+  module_load_include('inc', 'uuke_alipay', 'uuke_alipay_service');
+  $alipay = new alipay_notify($partner,$security_code,$sign_type,$_input_charset,$transport);
+  watchdog('uc_alipay_notify_called at12 verify_result=','verify_result');
+  $verify_result = $alipay->notify_verify();
+  watchdog('uc_alipay_notify_called at3 verify_result=', $verify_result);
+  $out_trade_no   = $request['out_trade_no'];   //获取支付宝传递过来的订单号
+  $trade_status = $request['trade_status'];//WAIT_BUYER_PAY
+  $trade_no =  $request['trade_no'];
+  if($verify_result) {  //认证合格
+    //获取支付宝的反馈参数
+    $order_nid = $out_trade_no - TRADE_ADD;
+    $order_node = node_load((int) $order_nid);
+
+    // $order_node = node_load($out_trade_no-20130420802);
+    $product_node = node_load($order_node->field_uuke_alipay_product_nid[LANGUAGE_NONE][0]['target_id']);
+    $nid = $order_node->nid;
+    $uid = $order_node->uid;
+    $buy_timestamp = $order_node->created;
+
+    // preg_match('/n\d+/', $out_trade_no, $matches, PREG_OFFSET_CAPTURE);
+   //  $nid = str_replace('n', '',$matches[0][0]);//order_id=200 将前面的11位删除 1365500773_n200_u1  n\d+
+   //  $product_node = node_load($nid);//product_type
+    // preg_match('/u\d+/', $out_trade_no, $matches, PREG_OFFSET_CAPTURE);
+   //  $uid = str_replace('u', '',$matches[0][0]);//200 将前面的11位删除 1365500773_n200_u1  n\d+
+    // preg_match('/\d+/', $out_trade_no, $matches, PREG_OFFSET_CAPTURE);
+    // $buy_timestamp = $matches[0][0];//下单时间
+    
+    $total_fee     = $request['total_fee'];      //获取支付宝传递过来的总价格
+    $price =  $request['price'];
+    $quantity =  $request['quantity'];
+    $trade_status_array = array(
+      'WAIT_BUYER_PAY',
+      'TRADE_FINISHED',
+      'TRADE_SUCCESS',
+      'WAIT_SELLER_SEND_GOODS',
+      'WAIT_BUYER_CONFIRM_GOODS',
+      'TRADE_CLOSED',
+    );
+    if(!in_array($trade_status,$trade_status_array)) {
+        watchdog('uc_alipay_notify', $trade_status.':验证失败1,状态未知 out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
+        watchdog('uc_alipay_notify_called at4 验证失败1,状态未知 ', REQUEST_TIME);
+        echo "fail1";
+        return;
+        //log_result ("verify_failed");
+    }
+    // $receive_name    =$request['receive_name'];    //获取收货人姓名
+    // $receive_address =$request['receive_address']; //获取收货人地址
+    // $receive_zip     =$request['receive_zip'];     //获取收货人邮编
+    // $receive_phone   =$request['receive_phone'];   //获取收货人电话
+    // $receive_mobile  =$request['receive_mobile'];  //获取收货人手机
+    /* 
+       获取支付宝反馈过来的状态,根据不同的状态来更新数据库 
+       WAIT_BUYER_PAY(表示等待买家付款);
+       TRADE_FINISHED(表示交易已经成功结束);
+      */
+    //执行自动发货 begin
+    uuke_alipay_auto_send_goods($trade_no,$out_trade_no);
+    //执行自动发货 end
+    //更新订单
+    $order = uuke_alipay_order_save($request,$order_node->nid);
+    watchdog('123更新订单', 'here!', array(), WATCHDOG_NOTICE, 'link');
+    echo 'success';return;
+  }else {    //认证不合格
+    watchdog('uc_alipay_notify', $trade_status.':认证不合格,out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
+    echo "fail23";return;
+    //log_result ("verify_failed");
+  }
+}
 
 function uuke_alipay_return() {
   //获取支付宝的反馈参数
