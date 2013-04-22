@@ -183,8 +183,8 @@ function uuke_alipay_content_types_setting_form_submit($form, &$form_state){
     watchdog('uc_alipay_notify_called at1', REQUEST_TIME);
     watchdog('uc_alipay_notify_called at11', '<pre>'.print_r($_POST,TRUE), array(), WATCHDOG_NOTICE, 'link');
     if(!isset($_POST['out_trade_no'])) {
+      watchdog('uc_alipay_notify_called at2', REQUEST_TIME);      
       echo 'fail';
-      watchdog('uc_alipay_notify_called at2', REQUEST_TIME);
       return;
     }
     $alipay = new alipay_notify($partner,$security_code,$sign_type,$_input_charset,$transport);
@@ -225,8 +225,8 @@ function uuke_alipay_content_types_setting_form_submit($form, &$form_state){
       );
       if(!in_array($trade_status,$trade_status_array)) {
           watchdog('uc_alipay_notify', $trade_status.':验证失败1,状态未知 out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
-          echo "fail";
           watchdog('uc_alipay_notify_called at4 验证失败1,状态未知 ', REQUEST_TIME);
+          echo "fail";
           return;
           //log_result ("verify_failed");
       }
@@ -246,47 +246,7 @@ function uuke_alipay_content_types_setting_form_submit($form, &$form_state){
       //更新订单
       $request = $_POST;
       $order = uuke_alipay_order_save($request,$order_node->nid);
-      // $query = db_select('uuke_alipay', 'h');
-      // $result = $query
-      //   ->fields('h', array('uid','nid','trade_no','status'))
-      //   ->condition('h.trade_no ',$trade_no)
-      //   ->execute()
-      //   ->fetchAssoc();
-      //这里放入你自定义代码,比如根据不同的trade_status进行不同操作
-      // if($result['status'] != $trade_status_in_db) {
-      //  // 交易状态改变
-      //  // $query = db_update('uuke_alipay')
-      //  //  ->fields(array(
-      //  //      'status' => $trade_status_in_db,
-      //  //    ))
-     //  //     ->condition('h.trade_no ',$trade_no)
-      //  //  ->execute();
-      //  watchdog('uc_alipay_notify', $trade_status.':已经记录,交易状态改变,out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
-      // }else{
-      //  watchdog('uc_alipay_notify', $trade_status.':已经记录,交易wei改变,out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
-      // }
-      // else{
-      //  // db_insert('uuke_alipay', array())
-    //  //    ->fields(array(
-      //  //   'trade_no' => $trade_no,
-      //  //   'out_trade_no' => $out_trade_no,
-      //  //   'uid' => $uid,
-      //  //   'nid' => $nid,
-      //  //   'paid_time' => REQUEST_TIME,
-      //  //   'buy_time' => $buy_timestamp,
-      //  //   'price' => $price,
-      //  //   'quantity' => $quantity,           
-      //  //   'type' => $product_node->type,
-      //  //   'status' => $trade_status_in_db,
-      //  //  ))
-      //  // ->execute();
-      //  // create a now order node begin
-      //  $request = $_POST;
-      //  $order = uuke_alipay_order_save($request);
-      //  // create a now order node end
-      //  // drupal_set_message(t('付款成功!.'), 'status', FALSE);
-      //  watchdog('uc_alipay_notify', $trade_status.':交易 added to db!,out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
-      // }
+      watchdog('123更新订单', 'here!', array(), WATCHDOG_NOTICE, 'link');
       echo 'success';return;
     }else {    //认证不合格
       watchdog('uc_alipay_notify', $trade_status.':认证不合格,out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
