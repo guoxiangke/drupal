@@ -439,10 +439,11 @@ function uuke_alipay_order_check($product_node,$account=NULL) {
  */
 function uuke_alipay_auto_send_goods($trade_no,$out_trade_no) {
 	$order_nid = $out_trade_no - TRADE_ADD;
-
+	watchdog('uuke_alipay_auto_send_goods', 'order_nid=>'.$order_nid, array(), WATCHDOG_NOTICE, 'link');
 	$order_node = node_load((int)$order_nid);
 
-	if($order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'] == '等待发货' || $order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'] == '等待处理') {
+	if($order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'] != '已发货') {
+		watchdog('uuke_alipay_auto_send_goods2', 'update status==已发货', array(), WATCHDOG_NOTICE, 'link');
 		$order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'] = '已发货'; //等待确认收货
 		node_save($order_node);
 	}	
@@ -451,6 +452,7 @@ function uuke_alipay_auto_send_goods($trade_no,$out_trade_no) {
   $response_xml = uuke_getHttpResponseGET($send_goods_confirm_link);
 	// 执行自动发货 end
 
+	watchdog('uuke_alipay_auto_send_goods3', '执行自动发货 end', array(), WATCHDOG_NOTICE, 'link');
 }
 /**
  * 构造自动发货链接

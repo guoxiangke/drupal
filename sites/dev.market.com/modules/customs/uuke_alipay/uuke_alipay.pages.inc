@@ -274,7 +274,8 @@ function uuke_alipay_notify() {
       // 'TRADE_CLOSED',
     );
     watchdog('status form '.$order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'], $trade_status, array(), WATCHDOG_NOTICE, 'link');
-    if(in_array($trade_status,$trade_status_array)) {
+    if(in_array($trade_status,$trade_status_array)) { 
+      watchdog('2status form '.$order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'], $trade_status, array(), WATCHDOG_NOTICE, 'link');
       //执行自动发货 begin
       uuke_alipay_auto_send_goods($trade_no,$out_trade_no);
       watchdog('执行自动发货', '执行自动发货', array(), WATCHDOG_NOTICE, 'link');
@@ -301,7 +302,7 @@ function uuke_alipay_notify() {
       watchdog('订单'.$order_node->nid.'更新',' $product_node->title', array(), WATCHDOG_NOTICE, 'link');
     }
    
-    echo 'success';return;
+    echo 'fail';return;
   }else {    //认证不合格
     watchdog('uc_alipay_notify', $trade_status.':认证不合格,out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
     echo "fail";return;
