@@ -237,7 +237,6 @@ function uuke_alipay_notify() {
   $sign_type = "MD5";
   $_input_charset = 'UTF-8';
   $transport = 'https';
-  watchdog('uc_alipay_notify_called at11', '<pre>'.print_r($request,TRUE), array(), WATCHDOG_NOTICE, 'link');
   if(!isset($request['out_trade_no'])) {
     watchdog('uc_alipay_notify_called at2', REQUEST_TIME);      
     echo 'fail';
@@ -246,7 +245,6 @@ function uuke_alipay_notify() {
   module_load_include('inc', 'uuke_alipay', 'uuke_alipay_service');
   $alipay = new alipay_notify($partner,$security_code,$sign_type,$_input_charset,$transport);
   $verify_result = $alipay->notify_verify();
-  watchdog('verify_result1=', $verify_result);
   $out_trade_no   = $request['out_trade_no'];   //获取支付宝传递过来的订单号
   $trade_status = $request['trade_status'];//WAIT_BUYER_PAY
   $trade_no =  $request['trade_no'];
@@ -259,7 +257,6 @@ function uuke_alipay_notify() {
     // $product_nid = $order_node->field_uuke_alipay_product_nid[LANGUAGE_NONE][0]['target_id'];
     // $product_node = node_load((int)$product_nid);
     $nid = $order_node->nid;
-      watchdog('order_node-nid', $order_nid.'<pre>'.print_r($order_node->field_uuke_alipay_product_nid,TRUE), array(), WATCHDOG_NOTICE, 'link');
     $buy_timestamp = $order_node->created;
     
     $total_fee     = $request['total_fee'];      //获取支付宝传递过来的总价格
@@ -273,9 +270,7 @@ function uuke_alipay_notify() {
       'WAIT_BUYER_CONFIRM_GOODS',
       // 'TRADE_CLOSED',
     );
-    watchdog('status form '.$order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'], $trade_status, array(), WATCHDOG_NOTICE, 'link');
-    if(in_array($trade_status,$trade_status_array)) { 
-      watchdog('2status form '.$order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'], $trade_status, array(), WATCHDOG_NOTICE, 'link');
+    if(in_array($trade_status,$trade_status_array)) {
       //执行自动发货 begin
       uuke_alipay_auto_send_goods($trade_no,$out_trade_no);
       watchdog('执行自动发货', '执行自动发货', array(), WATCHDOG_NOTICE, 'link');
@@ -302,7 +297,7 @@ function uuke_alipay_notify() {
       watchdog('订单'.$order_node->nid.'更新',' $product_node->title', array(), WATCHDOG_NOTICE, 'link');
     }
    
-    echo 'fail';return;
+    echo 'success';return;
   }else {    //认证不合格
     watchdog('uc_alipay_notify', $trade_status.':认证不合格,out_trade_no='.$out_trade_no.'&trade_no='.$trade_no);
     echo "fail";return;
