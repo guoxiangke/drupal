@@ -273,7 +273,7 @@ function uuke_alipay_notify() {
     if(in_array($trade_status,$trade_status_array)) {
       //执行自动发货 begin
       uuke_alipay_auto_send_goods($trade_no,$out_trade_no);
-      watchdog('执行自动发货', '执行自动发货', array(), WATCHDOG_NOTICE, 'link');
+      watchdog('uuke_alipay_auto_send_goods', '$order->nid =>'.$order_node->nid, array(), WATCHDOG_NOTICE, 'link');
       //执行自动发货 end
     }
     // else{
@@ -294,7 +294,7 @@ function uuke_alipay_notify() {
     //更新订单
     if($order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'] != uuke_alipay_trade_status_to_chinese($trade_status)) {
       $order = uuke_alipay_order_save($request,$order_node->nid);
-      watchdog('订单'.$order_node->nid.'更新',' $product_node->title', array(), WATCHDOG_NOTICE, 'link');
+      watchdog('订单更新','$order->nid =>'.$order_node->nid);
     }
    
     echo 'success';return;
