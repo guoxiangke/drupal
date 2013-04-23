@@ -244,8 +244,8 @@ function uuke_alipay_for_node($product_node) {
 	}
 	module_load_include('inc', 'uuke_alipay', 'uuke_alipay_service');
 	$security_code = variable_get('uuke_alipay_key', '');
-	dpm($parameter,'parameter');
-	dpm($security_code,'security_code');
+	// dpm($parameter,'parameter');
+	// dpm($security_code,'security_code');
 	$sign_type = "MD5";
 	$alipay = new alipay_service($parameter,$security_code,$sign_type);
   $link = $alipay->create_url();
@@ -282,14 +282,14 @@ function uuke_alipay_node_view($node, $view_mode, $langcode) {
 					$pay_link = 'node/'.$node->nid.'/alipay';
 					$pay_type = 'Alipay';
 				  $out_trade_no = str_pad($order_nid, 9, "0", STR_PAD_LEFT);//118854555 //000000001
-					$trade_no = $node->created + $node->nid;
+					$trade_no = $order_node->created + $order_node->nid;
 					if($trade_status == '等待付款' || $trade_status == '等待处理'){
-						drupal_set_message(t('您的"'.$node->title.'"订单'.$trade_no.'已生成，请点击'.l($pay_type.'付款',$pay_link).'跳转到支付页面。订单状态为：'.uuke_alipay_trade_status_to_chinese($trade_status)) );
+						drupal_set_message(t('您的"'.$node->title.'"订单'.$order_node->nid.'已生成，请点击'.l($pay_type.'付款',$pay_link).'跳转到支付页面。订单状态为：'.uuke_alipay_trade_status_to_chinese($trade_status)) );
 						// drupal_set_message(t('您的'.$node->title.'订单'.l($out_trade_no,'node/'.$order_nid).'已生成，请点击'.l('付款',$pay_link).'跳转到支付页面。订单状态为：'.uuke_alipay_trade_status_to_chinese($trade_status)) );
 						$show = TRUE;
 					}else{
-						drupal_set_message('您的'.$node->title.'订单'.$out_trade_no.'付款成功！已购买！');
-						drupal_set_message('您的'.$node->title.'订单'.l($out_trade_no,'node/'.$order_nid).'付款成功！ 状态为：'.uuke_alipay_trade_status_to_chinese($trade_status));
+						// drupal_set_message('您的'.$node->title.'订单'.$out_trade_no.'付款成功！已购买！');
+						// drupal_set_message('您的'.$node->title.'订单'.l($out_trade_no,'node/'.$order_nid).'付款成功！ 状态为：'.uuke_alipay_trade_status_to_chinese($trade_status));
 					}
 				}else{
 					$show = TRUE;
@@ -297,7 +297,7 @@ function uuke_alipay_node_view($node, $view_mode, $langcode) {
 				if($show) {
 					$base_path = url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q=');
 					$node->content['alipay'] =  array(
-						'#markup' => t('Pay for it|paid|installed'),
+						'#markup' => t('Alipay'),
 						'#prefix' => '<a class= "button" href="'.$base_path.'node/'.$node->nid.'/alipay" target="_blank">',
 						'#suffix' => '</a>', 
 						'#weight' => -19,
