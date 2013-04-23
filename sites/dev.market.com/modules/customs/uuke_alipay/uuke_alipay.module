@@ -91,9 +91,26 @@ function uuke_alipay_menu() {
  * "An answer must be linked to a quetion.
  * Please go to a question page,unless you really know what you are doing!"
  */
-function druedu_qa_menu_alter(&$items) {
+function uuke_alipay_menu_alter(&$items) {
   $items['node/add/uuke-alipay-order']['access callback'] = FALSE;
+  $items['node/%node/edit']['access callback'] = 'node_access4uuke_alipay';
 }
+/**
+ * @see node_access
+ */
+function node_access4uuke_alipay($op, $node, $account = NULL) {
+  if($node->type == 'uuke_alipay_order' && $op == 'update') {
+    global $user; 
+    //不可编辑except 1
+    if($user->uid <> 1) {//noone 
+      return false;
+    }
+    return node_access($op, $node, $account);
+  }else {
+    return node_access($op, $node, $account);
+  }
+ }
+
 /**
  * Implements hook_permission().
  */
@@ -185,20 +202,20 @@ function uuke_alipay_for_node($product_node) {
 		}	//生成订单 end 
 	}
 	//支付宝即时到账交易接口参数
-	// $parameter = array(
- //  	"service"         => variable_get('uuke_alipay_service', 'create_direct_pay_by_user'),  //交易类型
-	// 	"partner"         => variable_get('uuke_alipay_partner', ''),         //合作商户号
-	// 	"return_url"      => $base_path.'alipay/return',      //同步返回
-	// 	"notify_url"      => $base_path.'alipay/notify',      //异步返回
-	// 	"_input_charset"  =>  'UTF-8',  //字符集，默认为GBK
-	// 	"subject"         => variable_get('site_name', "zhupou.cn"),       //商品名称，必填
-	// 	"body"            => variable_get('site_name', "zhupou.cn"),        //商品描述，必填,这里用网站名字代替
-	// 	"out_trade_no"    => $out_trade_no,//'20130409_01',//date('Ymd').'_'.$order_id,     //商品外部交易号，必填（保证唯一性）
-	// 	"total_fee"       => $price,//$order->order_total,           //商品单价，必填（价格不能为0）
-	// 	"payment_type"    => "1",               //默认为1,不需要修改
-	// 	"show_url"        => $base_path,        //商品相关网站
-	// 	"seller_email"    => variable_get('uuke_alipay_seller_email', ''),     //卖家邮箱，必填
- //  );
+	$parameter = array(
+  	"service"         => variable_get('uuke_alipay_service', 'create_direct_pay_by_user'),  //交易类型
+		"partner"         => variable_get('uuke_alipay_partner', ''),         //合作商户号
+		"return_url"      => $base_path.'alipay/return',      //同步返回
+		"notify_url"      => $base_path.'alipay/notify',      //异步返回
+		"_input_charset"  =>  'UTF-8',  //字符集，默认为GBK
+		"subject"         => $product_node->title,       //商品名称，必填
+		"body"            => $base_path.'node/'.$product_node->nid,        //商品描述，必填,这里用网站名字代替
+		"out_trade_no"    => $order_nid + TRADE_ADD,//$out_trade_no,//'20130409_01',//date('Ymd').'_'.$order_id,     //商品外部交易号，必填（保证唯一性）
+		"total_fee"       => $price,//$order->order_total,           //商品单价，必填（价格不能为0）
+		"payment_type"    => "1",               //默认为1,不需要修改
+		"show_url"        => $base_path.'node/'.$product_node->nid,        //商品相关网站
+		"seller_email"    => variable_get('uuke_alipay_seller_email', ''),     //卖家邮箱，必填
+  );
   //支付宝即时到账交易接口参数 end
   //支付宝纯担保交易接口
 	if($service == 'create_partner_trade_by_buyer') {
@@ -268,7 +285,7 @@ function uuke_alipay_node_view($node, $view_mode, $langcode) {
 	$uuke_alipay_content_types = unserialize(variable_get('uuke_alipay_content_types', null));
 	//判断拥有价格字段 //isset($node->field_uuke_price)
 	// dpm($uuke_alipay_content_types,$node->type); // in_array($node->type, $uuke_alipay_content_types)
-	if(isset($uuke_alipay_content_types[$node->type]) && $uuke_alipay_content_types[$node->type]){
+	if(isset($uuke_alipay_content_types[$node->type]) && $uuke_alipay_content_types[$node->type]) {
 		if($view_mode=='full') {
 			if(!isset($node->field_uuke_price[LANGUAGE_NONE][0]['value'])){
 				drupal_set_message(t('本商品免费或不可出售。'), 'status', FALSE);
@@ -299,8 +316,8 @@ function uuke_alipay_node_view($node, $view_mode, $langcode) {
 					$base_path = url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q=');
 					$node->content['alipay'] =  array(
 						'#markup' => t('Alipay'),
-						'#prefix' => '<a class= "button" href="'.$base_path.'node/'.$node->nid.'/alipay" target="_blank">',
-						'#suffix' => '</a>', 
+						'#prefix' => '<div><a class= "button" href="'.$base_path.'node/'.$node->nid.'/alipay" target="_blank">',
+						'#suffix' => '</a></div>', 
 						'#weight' => -19,
 					);
 				}
@@ -311,6 +328,38 @@ function uuke_alipay_node_view($node, $view_mode, $langcode) {
 
 }
 
+/**
+ * Implements hook_block_info().
+ */
+function uuke_alipay_block_info() {
+  $blocks = array();
+  $blocks['alipay_link'] = array(
+    'info' => t('Link of pay'),
+    //'region' => 'sidebar_right',
+  );
+  return $blocks;
+}
+/**
+ * Implements hook_block_view().
+ */
+function uuke_alipay_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'alipay_link':
+      $block['subject'] = t('PAY');
+      $block['content'] = uuke_alipay_paylink_block();
+      break;
+  }
+  return $block;
+}
+function uuke_alipay_paylink_block() {
+	$node = node_load(arg(1));//TODO: get form context 
+	$node = node_view($node);
+	$output = drupal_render($node['alipay']);
+	if(isset($node['unionpay']))
+		$output .= '<br/>'.drupal_render($node['unionpay']);
+  return $output;
+}
 /**
  * 判断某节点商品是否购买
  * @return TRUE is paid.
