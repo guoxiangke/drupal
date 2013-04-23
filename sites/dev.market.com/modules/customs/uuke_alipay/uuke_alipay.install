@@ -1212,3 +1212,9 @@ function uuke_alipay_install() {
 function uuke_alipay_uninstall() {
 	db_query("DELETE FROM {variable} WHERE name LIKE 'uuke_alipay_%%'");
 }
+/**
+ * Implements hook_enable().
+ */
+function uuke_alipay_enable() {
+  drupal_set_message(t('The uuke_alipay  module was successfully enabled. Please '.l('click here','admin/config/alipay').'to config before use.'), $type = 'status');
+}

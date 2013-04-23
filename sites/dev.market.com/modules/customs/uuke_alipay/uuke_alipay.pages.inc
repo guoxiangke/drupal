@@ -39,11 +39,11 @@ function uuke_alipay_configue_form($form, &$form_state) {
  * 
  */
 function uuke_alipay_content_types_setting_form($value=''){
-	$form = array();
-	$form['titles'] = array(
-		'#markup' => t('可以购买的节点的类型,自动添加Price字段field_uuke_price to the content type')
-	);
-	$synch_types = variable_get('uuke_alipay_content_types', NULL);
+  $form = array();
+  $form['titles'] = array(
+    '#markup' => t('可以购买的节点的类型,自动添加Price字段field_uuke_price to the content type')
+  );
+  $synch_types = variable_get('uuke_alipay_content_types', NULL);
   if(!$synch_types){
     $synch_types = array();
   }else{
@@ -51,6 +51,7 @@ function uuke_alipay_content_types_setting_form($value=''){
   }
   $node_types = node_type_get_types();
   foreach ($node_types as $node_type => $node_type_obj) {
+    if($node_type == 'uuke_alipay_order') continue;
     $form['node_types']["$node_type"] = array(
       '#title'=>$node_type_obj->name,
       '#type' => 'checkbox',
@@ -58,35 +59,36 @@ function uuke_alipay_content_types_setting_form($value=''){
       '#description' => $node_type_obj->description,
     );
   }
-	// Add the buttons.
-	$form['actions'] = array('#type' => 'actions');
+  // Add the buttons.
+  $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
     '#weight' => 5,
   );
-	$form['actions']['reset'] = array(
+  $form['actions']['reset'] = array(
     '#type' => 'button',
     '#value' => t('reset'),
     '#weight' => 6,
   );
-	return $form;
+  return $form;
 }
 
 /**
  * Form submit handler for the open_users_synch_setting() form.
  */
 function uuke_alipay_content_types_setting_form_submit($form, &$form_state){
-	$node_types = node_type_get_types();
-	$setting = array();
-	foreach ($node_types as $node_type => $node_type_obj){
-		$setting[$node_type] = $form_state['values'][$node_type];
-	}
-	$synch_types = serialize($setting);
-	if(variable_get('uuke_alipay_content_types', null)==$synch_types){
-  	drupal_set_message(t('设置未更改！'),'status');
-	}else{
-	  variable_set('uuke_alipay_content_types', $synch_types);
+  $node_types = node_type_get_types();
+  $setting = array();
+  foreach ($node_types as $node_type => $node_type_obj){
+    if($node_type == 'uuke_alipay_order') continue;
+    $setting[$node_type] = $form_state['values'][$node_type];
+  }
+  $synch_types = serialize($setting);
+  if(variable_get('uuke_alipay_content_types', null)==$synch_types){
+    drupal_set_message(t('设置未更改！'),'status');
+  }else{
+    variable_set('uuke_alipay_content_types', $synch_types);
     foreach ($setting as $content_type => $value) {
       $data = array(
         'instances' => array(
@@ -136,35 +138,89 @@ function uuke_alipay_content_types_setting_form_submit($form, &$form_state){
             ),
           ),
         ),
+        'fields' => array(
+          'field_uuke_price' => array(
+            'translatable' => '0',
+            'entity_types' => array(),
+            'settings' => array(
+              'precision' => '10',
+              'scale' => '2',
+              'decimal_separator' => '.',
+            ),
+            'storage' => array(
+              'type' => 'field_sql_storage',
+              'settings' => array(),
+              'module' => 'field_sql_storage',
+              'active' => '1',
+              'details' => array(
+                'sql' => array(
+                  'FIELD_LOAD_CURRENT' => array(
+                    'field_data_field_uuke_price' => array(
+                      'value' => 'field_uuke_price_value',
+                    ),
+                  ),
+                  'FIELD_LOAD_REVISION' => array(
+                    'field_revision_field_uuke_price' => array(
+                      'value' => 'field_uuke_price_value',
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            'foreign keys' => array(),
+            'indexes' => array(),
+            'field_name' => 'field_uuke_price',
+            'type' => 'number_decimal',
+            'module' => 'number',
+            'active' => '1',
+            'locked' => '0',
+            'cardinality' => '1',
+            'deleted' => '0',
+            'columns' => array(
+              'value' => array(
+                'type' => 'numeric',
+                'precision' => '10',
+                'scale' => '2',
+                'not null' => FALSE,
+              ),
+            ),
+            'bundles' => array(
+              'node' => array(
+                0 => 'app',
+                1 => 'page',
+              ),
+            ),
+          ),
+        ),
       );
-      if($value){//add instances
+
+      if($value) {
+        foreach ($data['fields'] as $field_name => $field) {
+          $ori_field = field_info_field($field_name);
+          if (empty($ori_field)) {
+             $field = field_create_field($field);
+             drupal_set_message(t('created field for uuke_alipay_order: ').$field_name, 'status', FALSE);
+          }
+        }
+        //add instances
         foreach ($data['instances'] as $instances_name => $instances) {
           foreach ($instances as $key => $instance) {
             //$instance = field_info_instance('node', 'body', $type->type);
             $ori_instance = field_info_instance('node', $instances_name, $instance['bundle']);
             if (empty($ori_instance)) {
                $instance = field_create_instance($instance);
-               watchdog('uuke_alipay', 'created instance for '.$content_type.': '.$instances_name);
+               drupal_set_message(t('created instance '.$instances_name.' for ').$content_type, 'status', FALSE);
             }
           }
         }
       }else{//del instances
 
-        // foreach ($data['instances'] as $instances_name => $instances) {
-        //   foreach ($instances as $key => $instance) {
-        //     //$instance = field_info_instance('node', 'body', $type->type);
-        //     $ori_instance = field_info_instance('node', $instances_name, $instance['bundle']);
-        //     if (empty($ori_instance)) {
-        //        $instance = field_delete_instance($instance,FALSE);
-        //        watchdog('uuke_alipay', 'delete instance for '.$content_type.': '.$instances_name);
-        //     }
-        //   }
-        // }
+        
       }
     }
-		drupal_set_message(t('设置成功！'),'status');
+    drupal_set_message(t('设置成功！'),'status');
     // drupal_set_message(t('请手动删除取消的content_typ field_uuke_price字段'),'status');
-	}
+  }
 }
 
   /**
