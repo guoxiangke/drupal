@@ -6,7 +6,7 @@
  *	// WAIT_BUYER_PAY  交易创建  false（不触发通知）
  *	// TRADE_CLOSED  交易关闭  false（不触发通知）
  */
-define('TRADE_ADD', date("Ymd"));
+define('TRADE_ADD', '1366679201');//date("Ymd",)
 function uuke_alipay_trade_status_to_chinese($trade_status_string) {
 	switch ($trade_status_string) {
 		case 'WAIT_BUYER_PAY':
