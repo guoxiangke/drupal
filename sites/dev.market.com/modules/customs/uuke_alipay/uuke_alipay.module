@@ -402,7 +402,7 @@ function uuke_alipay_order_save($request,$order_nid) {
 
 	if($old_status != uuke_alipay_trade_status_to_chinese($request['trade_status'])) {
 		$order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'] = uuke_alipay_trade_status_to_chinese($request['trade_status']);
-		watchdog('交易状态改变','$order_node->nid => '$order_node->nid.' form '.$old_status.'=>'.$request['trade_status']);
+		watchdog('交易状态改变','$order_node->nid => '.$order_node->nid.' form '.$old_status.'=>'.$request['trade_status']);
 	}
 	node_save($order_node);
 	$trade_no = $order_node->created + $order_node->nid;
