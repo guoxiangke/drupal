@@ -205,7 +205,7 @@ function uuke_unionpay_node_view($node, $view_mode, $langcode) {
 					$base_path = url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q=');
 					$node->content['unionpay'] =  array(
 						'#markup' => t('Unionpay'),
-						'#prefix' => '<a class= "button" href="'.$base_path.'node/'.$node->nid.'/unionpay" target="_blank">',
+						'#prefix' => '<a class= "uuke_pay_button button" href="'.$base_path.'node/'.$node->nid.'/unionpay" target="_blank">',
 						'#suffix' => '</a>', 
 						'#weight' => -18,
 					);
