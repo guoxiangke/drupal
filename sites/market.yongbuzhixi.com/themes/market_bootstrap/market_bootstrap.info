@@ -1,0 +1,12 @@
+name = Bootstrap subtheme for market
+description = Bootstrap subtheme
+version = dev-1.x
+core = 7.x
+base theme = bootstrap
+
+;regions[navigation]     = 'Navigation'
+
+stylesheets[all][] = css/global.css
+
+settings[toggle_name] = 0
+settings[toggle_search] = 1

@@ -1,0 +1,40 @@
+/* This file will hold styles for the mobile version of your website (mobile first). */
+/* This also can include ANY global CSS that applies site-wide. Unless overwritten by a more specific style rule, CSS declarations in global.css will apply site-wide. */
+#page h1 {
+	-webkit-font-smoothing: antialiased;
+	color: rgb(54, 54, 54);
+	font-size: 22px;
+	font-weight: bold;
+	line-height: 22px;
+}
+#page a {
+color: #17a792;
+text-decoration: none;
+}
+#page a:hover,#page a:focus {
+	color: #0e6457;
+/*text-decoration: underline;*/
+}
+
+body {
+	margin: 0;
+	color: #363636;
+	background-color: #F2F2F2;
+	font: 14px/21px "Lucida Grande", "Lucida Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
+}
+h1,h2,h3,h4,h5,h6 {
+	line-height: 1em;
+}
+
+#zone-content {
+	margin-top: 30px;
+	margin-bottom: 60px;
+	border-top: 1px solid #E3E3E3;
+	border-bottom: 2px solid #E3E3E3;
+	background-color: #FFF;
+	padding: 30px;
+	padding-top: 20px;
+	background: url("http://eduapp.nl/assets/content_back-6a8463f4ccd5cee5ba5d8f1406a82695.png") repeat-y top right #fff;
+	/*background: url("http://eduapp.nl/assets/nav_back-301cb9bca3f8578f5e7fef01c0e59702.png") repeat-y top left #f8f8f8;*/
+	border-left: 1px solid #E3E3E3;
+}
