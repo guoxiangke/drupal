@@ -13,11 +13,11 @@
 	display:inline-block;
 	color:#777777;
 	font-family:arial;
-	font-size:15px;
 	font-weight:bold;
 	padding:6px 24px;
 	text-decoration:none;
 	text-shadow:1px 1px 0px #ffffff;
+	margin-top: 5px;
 }
 .uuke_pay_button:hover {
 	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #dfdfdf), color-stop(1, #ededed) );
