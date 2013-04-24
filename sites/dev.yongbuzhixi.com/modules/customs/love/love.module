@@ -1,0 +1,260 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function love_menu() {
+  // $items['user/%/statuses'] = array(
+  //   'title' => 'Statuses',
+  //   'page callback'    => '_statuses_page',
+  //   'page arguments'   => array(1),
+  //   'file'             => 'privatemsg.pages.inc',
+  //   'access callback' => 'statuses_user_access',
+  //   'access arguments' => array('add'),
+  //   'type' => MENU_LOCAL_TASK,
+  // );
+  //http://dev.sina.org/relationship/12/request/1?destination=user/12
+  $items['ajax/relationship/%/request/%'] = array(
+    'title' => 'request',
+    'page callback'    => 'love_ajax_user_relationships_ui_request_submit',
+    'page arguments'   => array(2,4),
+    'access callback' => TRUE, 
+    // if (!user_relationships_can_request($user, $rtype) || !user_relationships_can_receive($account, $rtype))
+    'type' => MENU_CALLBACK,
+  );
+  //http://dev.sina.org/user/1/relationships/75/remove?destination=user/2
+  return $items;
+}
+
+/**
+ * Process relationship request.
+ * @see user_relationships_ui_request_submit
+ */
+function love_ajax_user_relationships_ui_request_submit($requestee_id,$rtid) {
+  global $user;
+  $requester = $user;
+  $requestee = user_load($requestee_id);
+  // $relationships_type = user_relationships_type_load($rtid);
+  // dpm($relationships_type);
+  if($rtid == '1'){//1 粉丝
+    $current_relationships = user_relationships_load(array('rtid' => $rtid,"requester_id" => $user->uid,'between' => array($requester->uid, $requestee->uid)));
+
+    if($current_relationships){
+      drupal_set_message(t('你已经是Ta的粉丝了，请勿重复请求！'));
+    }else{
+      $relationship = new stdClass;
+      $relationship->requestee = $requestee;
+      $relationship->requester = $user;
+      $relationship->type = user_relationships_type_load($rtid);
+      $relationship = user_relationships_request_relationship($relationship);
+      if ($relationship === FALSE) {
+        drupal_set_message(user_relationships_get_message('unknown_error', $relationship));
+      }else{
+        drupal_set_message(t('关注成功，你现在是Ta的粉丝了～！'));
+      }
+    }
+
+  }elseif($rtid == '2'){//2 熟人
+    //熟人rtid=2是单向关系，不需要互相请求，只一方即可。
+    $current_relationships = user_relationships_load(array('rtid' => $rtid,'between' => array($requester->uid, $requestee->uid)),array('sort'=>'rtid'));
+    if(count($current_relationships)){
+      if($current_relationships[$rtid][0]->approved) {
+        drupal_set_message(t('你们已经是熟人关系了，请勿重复请求!'));
+      }else {
+        drupal_set_message(t('你已经发送过熟人请求，请勿重复发送!'));
+      }
+    
+    }else{
+      $relationship = new stdClass;
+      $relationship->requestee = $requestee;
+      $relationship->requester = $user;
+      $relationship->type = user_relationships_type_load($rtid);
+      $relationship = user_relationships_request_relationship($relationship);
+      if ($relationship === FALSE) {
+        drupal_set_message(user_relationships_get_message('unknown_error', $relationship));
+      }else{
+         drupal_set_message(t('恭喜，你的熟人请求已发送～，请耐心等待对方的确认!'));
+      }
+    }
+  }
+  drupal_goto();
+  return '';
+}
+
+/**
+ * Implements of hook_theme().
+ */
+function love_theme($existing, $type, $theme, $path) {
+  return array(
+    'love_profile_visits' => array(
+      'variables' => array(
+        'account'   => NULL,
+        'timestamp' => NULL,
+        'referer'   => NULL,
+      ),
+    ),
+  );
+}
+
+/**
+ * Theme preprocess for views-view-index.tpl.php.
+ * prepare comments vars for qustion view page for both question and answers in module Level.
+ * TODO:we should check in theme level 
+ */
+function love_preprocess_views_view(&$vars) {
+  $view = $vars['view'];
+  if ($view->name == 'index') {//  && $view->current_display == 'photos_page_all'
+    //$vars['answer_node_form'] = druedu_node_add('answer');
+    drupal_add_css(drupal_get_path('module', 'love') .'/highslide/highslide.css');
+    drupal_add_js(drupal_get_path('module', 'love') .'/highslide/highslide.js');
+    drupal_add_js(drupal_get_path('module', 'love') .'/highslide/highslide-cfg.js');
+  }
+}
+
+/**
+ * when a user invite by love group member,
+ * let it join the love group too.
+ * and when register ,not display let user choose which group to join,for the multilanguage bug of og.
+ */
+function love_user_presave(&$edit, $account, $category) {
+  //2 is the love group gid.
+  $edit['og_group_ref'][LANGUAGE_NONE][0] = array('target_id'=>2);
+  //$account->og_group_ref[LANGUAGE_NONE][0] = array('target_id'=>2);
+  //user_save($account);
+}
+function love_user_login(&$edit, $account)
+{
+  // Your logic will set $redirection to the desired location
+  $redirection = 'photos';
+
+  // Unless there is already a redirection going, or the user is trying to reset his password, we redirect to $redirection.
+  if (empty($_GET['destination'])
+    && !is_null($redirection)
+    && (!isset($_POST['form_id']) || $_POST['form_id'] != 'user_pass_reset'))
+  {
+    $_GET['destination'] = $redirection; // Should we use $edit['redirect'] instead..?
+  }
+}
+
+function love_node_presave($node) {
+  if($node->type == 'photo') {
+    $node->og_group_ref[LANGUAGE_NONE][0] = array('target_id'=>'2');
+  }
+}
+
+/**
+ * if user visit love profile-main or profile-believes +1
+ * user_visits++
+ * Implements of hook_exit().
+ * @see user_visits_exit()
+ */
+function love_exit() {
+  global $user;
+  $referer = $_SERVER['HTTP_REFERER'];
+
+  // Don't count if user no has access to profile
+  if (!user_access('access user profiles')) {
+    return;
+  }
+
+  // Don't count anonymous-clicks.
+  if (!$user->uid) {
+    return;
+  }
+
+  // Don't count if role is hidden.
+  if (user_visits_is_hidden($user)) {
+    return;
+  }
+
+  // Try not to count clicks from the user's other profile pages.
+  if (strpos($_SERVER['HTTP_REFERER'], arg(0) . '/' . arg(1))) {
+    //return;//XXX why???
+  }
+  // Record visits on user profile pages.
+  //profile-*/1
+	if((strpos( arg(0),"profile-")==0) && is_numeric(arg(1)) && !arg(2)) {
+		if ($user->uid != arg(1)) {
+      // Count view.
+      user_visits_count($user->uid, arg(1));
+    }
+	}
+}
+
+/**
+ * Implement hook_ctools_plugin_api().
+ *
+ * This hook is needed to let ctools know about exportables.
+ * @see heartbeat_og_ctools_plugin_api
+ */
+function love_ctools_plugin_api($module, $api) {
+  if ($module == 'heartbeat' && $api == 'heartbeat') {
+    return array('version' => 1);
+  }
+}
+/**
+ * bug fix
+ * @see http://drupal.org/node/1286876#comment-5294866
+ */
+
+/**
+ * return the relationship of two users.
+ * ->
+ * 
+ */
+function love_ur_between($account,$rtid = 1,$requester=NULL){
+
+    global $user;
+    $rtid = $rtid?$rtid:1;//粉丝 关注
+    $requester=$requester?$requester:$user;
+    if(is_numeric($account)) {
+      $account = user_load($account);
+    }
+    $requestee = $account;
+    $ur_way = user_relationships_load(array('rtid' => array($rtid),'between' => array($requestee->uid,$requester->uid)),array('count'=>1));
+    $friends = FALSE;
+    $follow = FALSE;
+    $follower = FALSE; 
+    $no_relationships = FALSE;
+    switch ($ur_way) {
+      case '2':
+        // two-way relationships.
+        $friends = TRUE;
+        return 'friends';
+        break;
+      case '0':
+        $no_relationships = TRUE;
+        // no-way relationships.
+        return FALSE;
+        break;
+      default:
+        // one-way relationships.
+        $follow = user_relationships_load(array('rtid' => array($rtid),'between' => array($requestee->uid,$requester->uid),'requester_id'=>$requester->uid),array('count'=>1));
+        $follower = user_relationships_load(array('rtid' => array($rtid),'between' => array($requestee->uid,$requester->uid),'requester_id'=>$requestee->uid),array('count'=>1));
+        return $follow?'follow':'follower';
+        break;
+    }
+}
+/**
+ * $type string 
+ * $account uid/obj
+ */
+function love_get_nodes_by_type($type,$account=NULL){
+      /**EntityFieldQuery**/
+    if(!isset($account)){
+      global $user;
+      $account = $user;
+    }elseif(is_numeric($account)){
+      $account = user_load($account);
+    }
+    $query = new EntityFieldQuery();
+    return $entities = $query->entityCondition('entity_type', 'node')
+                    //->entityCondition('bundle', $type)
+                    ->propertyCondition('type', $type)
+                    ->propertyCondition('uid', $account->uid)
+                    ->propertyCondition('status', 1)
+                    //->fieldCondition('field_date', 'value', array('2011-03-01', '2011-03-31'), 'BETWEEN')
+                    //->fieldOrderBy('field_date', 'value', 'ASC')
+                    ->propertyOrderBy('created', 'DESC')
+                    ->execute();
+}

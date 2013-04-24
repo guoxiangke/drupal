@@ -1,0 +1,53 @@
+<?php
+/**
+ * Implements hook_node_insert().
+ * @param <type> $node
+ */
+function heartbeat_default_pathauto_node_insert($node) {
+  $options = array('language' => pathauto_entity_language('node', $node));
+  module_load_include('inc', 'pathauto');
+  $uri = entity_uri('node', $node);
+  pathauto_create_alias('node', $op='insert', $uri['path'], array('node' => $node), $node->type, $options['language']);
+
+  heartbeat_api_log('heartbeat_add_node', $node->uid, 0, $node->nid, 0, array(
+    '!node_title' => l($node->title, 'node/'. $node->nid),
+    '!username'=> l(user_load($node->uid)->name, 'user/'. $node->uid),
+    '!node_type' => $node->type,
+    '!types' => $node->type .'s'
+  ), HEARTBEAT_PUBLIC_TO_ALL, $node->created);
+
+}
+/**
+ * Implements hook_node_update().
+ * @param <type> $node
+ */
+function heartbeat_default_pathauto_node_update($node) {
+  $options = array('language' => pathauto_entity_language('node', $node));
+  module_load_include('inc', 'pathauto');
+  $uri = entity_uri('node', $node);
+  pathauto_create_alias('node', $op='insert', $uri['path'], array('node' => $node), $node->type, $options['language']);
+  heartbeat_api_log('heartbeat_edit_node', $node->uid, 0, $node->nid, 0, array(
+    '!node_title' => l($node->title, 'node/'. $node->nid),
+    '!username'=> l(user_load($node->uid)->name, 'user/'. $node->uid),
+    '!node_type' => $node->type,
+    '!types' => $node->type .'s'
+  ), HEARTBEAT_PUBLIC_TO_ALL);
+
+}
+/**
+ * Implements hook_comment_insert().
+ */
+function heartbeat_default_pathauto_comment_insert($comment) {
+  heartbeat_api_log('heartbeat_add_comment', $comment->uid, 0, $comment->nid, 0, array( 
+    '!username'=> l(user_load($comment->uid)->name, 'user/'. $comment->uid),
+    '!title' => l(node_load($comment->nid)->title, 'node/'. $comment->nid),
+    '!comment' => $comment->subject.'<br />'.drupal_render($comment->comment_body)
+  ), HEARTBEAT_PUBLIC_TO_ALL);
+}
+/**
+ * Implements hook_user_update().
+ */
+function heartbeat_default_pathauto_user_update(&$edit, $account, $category) {
+  heartbeat_api_log('heartbeat_edit_account', $account->uid, 0, 0, 0, array('!username'=> l($account->name, 'user/'. $account->uid),
+  ), HEARTBEAT_PUBLIC_TO_ALL);
+}

@@ -1,0 +1,181 @@
+<?php
+/**
+ * Implementation of hook_schema().
+ */
+function open_users_schema() {
+  $schema['open_users'] = array(
+    'description' => '记录用户绑定第三方账户信息',
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'description' => 'uid',
+        'unsigned' => true,
+        'not null' => true,
+        'default' => 0,
+      ),
+      'open_uid' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'open_user_id',
+      ),
+      'open_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'open_user_name',
+      ),
+      'open_picture' => array(//update_7000
+        'type' => 'varchar',
+        'length' => '255',
+        'default' => '',
+        'not null' => TRUE,
+        'description' => 'The open users picture.',
+      ),
+      'open_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'open_platform',
+      ),
+      'open_token' => array(
+        'type' => 'text',
+        'description' => 'open_token',
+        'not null' => true,
+        'serialize' => true,
+        'size' => 'medium'
+      ),
+      'open_config' => array(
+        'type' => 'text',
+        'description' => 'open_config',
+        'serialize' => true,
+        'not null' => true,
+        'size' => 'medium'
+      ),
+    ),
+    'unique keys' => array(
+      'open_uid_type' => array('open_uid','open_type'),
+    ),
+  );
+  //@see open_users_update_7001()
+  $schema['open_users_synch_type'] = array(
+    'description' => 'synch types',
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'description' => 'uid',
+        'unsigned' => true,
+        'not null' => true,
+        'default' => 0,
+      ),
+      'synch_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The types array users synch, default not synch.',
+      ),
+    ),
+    
+    'primary key' => array('uid'),
+    'foreign keys' => array(
+      'user' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid'),
+      ),
+    ),
+  );
+  return $schema;
+}
+
+/**
+ * Implementation of hook_install().
+
+function open_users_install() {
+  //drupal_install_schema('open_users');
+}
+ */
+/**
+ * Implementation of hook_uninstall().
+ */
+function open_users_uninstall() {
+  drupal_uninstall_schema('open_users');
+  db_query("DELETE FROM {variable} WHERE name LIKE 'open_users_%'");
+  cache_clear_all('variables', 'cache');
+}
+
+/**
+ * @Implement of hook_requirements()
+
+function open_users_requirements($phase) {
+  $requirements = array();
+  
+  if (!function_exists('json_decode') || !function_exists('hash_hmac')) {
+    $requirements['php']['description'] = '必须开启 json、hash 扩展库';
+    $requirements['php']['severity'] = REQUIREMENT_ERROR;
+  }
+  
+  return $requirements;
+} */
+/**
+ * add new open_picture field to table open_users and update info.
+ */
+function open_users_update_7000() {
+  $new_field = array(
+    'type' => 'varchar',
+    'length' => '255',
+    'default' => '',
+    'not null' => TRUE,
+    'description' => 'The open users picture.',
+  );
+	
+	db_add_field( 'open_users', 'open_picture', $new_field);
+	/* Q:如何drupal7 install更新添加表并更新表内容为其他列的unserialize
+	$ret = array();
+  // NOTE: update_sql() doesn't support %-substitution parameters
+  //$open_picture = unserialize('select open_users_info form open_users');
+  $ret[] = db_query("UPDATE {open_users} SET open_picture = ???$open_picture???'");//update_sql
+  return $ret;*/
+};
+/**
+ * add new table about synch types.
+ */
+function open_users_update_7001() {
+  $schema['open_users_synch_type'] = array(
+    'description' => 'synch types',
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'description' => 'uid',
+        'unsigned' => true,
+        'not null' => true,
+        'default' => 0,
+      ),
+      'synch_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The types array users synch, default not synch.',
+      ),
+    ),
+    
+		'primary key' => array('uid'),
+    'foreign keys' => array(
+      'user' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid'),
+      ),
+    ),
+	);
+	db_create_table('open_users_synch_type', $schema['open_users_synch_type']);
+};
+/**
+ * del table open_users_synch_type.
+ */
+function open_users_update_7002() {
+	db_drop_table('open_users_synch_type');
+}

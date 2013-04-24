@@ -1,0 +1,6 @@
+name = ybread
+description = love ybread.
+version = 1.1
+core = 7.x
+package = A-DEV
+;dependencies[] = simplehtmldom

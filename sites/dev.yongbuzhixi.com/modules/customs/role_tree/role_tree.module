@@ -1,0 +1,122 @@
+<?php
+/**
+ * Implements hook_menu_alter().
+ */
+function role_tree_menu_alter(&$items) {
+  $items['admin/people/permissions/roles']['page arguments'] = array('role_tree_overview_roles');
+  $items['admin/people/permissions/roles']['file path'] = drupal_get_path('module', 'role_tree');
+  $items['admin/people/permissions/roles']['file'] = 'role_tree.admin.inc';
+//  $items['admin/people/create']['page callback'] = 'role_tree_user_admin';
+//  $items['admin/people/create']['file path'] = drupal_get_path('module', 'role_tree');
+//  $items['admin/people/create']['file'] = 'role_tree.admin.inc';  
+}
+
+/**
+ * Implements hook_theme().
+ */
+function role_tree_theme() {
+  return array(
+    'role_tree_overview_roles' => array(
+      'render element' => 'form',
+    ),                
+  );
+}
+
+function role_tree_form_user_register_form_alter(&$form, &$form_state, $form_id) {
+	global $user;
+	
+	$register = ($form['#user']->uid > 0 ? FALSE : TRUE);
+	unset($user->roles[2]);
+	$rids = array_keys($user->roles);
+	$trees = array();
+	foreach ($rids as $rid) {
+		$trees = array_merge($trees,role_tree_get_tree($rid));
+	}
+	$roles = array();
+	foreach ($trees as $role) {
+		$roles[] = str_repeat('—', $role->depth) . $role->name;
+	}
+	//var_dump($roles);exit;
+  $form['account']['roles'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Roles'),
+    '#default_value' => (!$register && isset($account->roles) ? array_keys($account->roles) : array()),
+    '#options' => $roles,
+    '#access' => $roles && user_access('administer permissions'),
+  );	
+}
+
+/**
+ * Implements hook_init().
+ */
+function role_tree_init() {
+	module_load_include('admin.inc', 'user');
+}
+
+/**
+ * Create a hierarchical representation of roles.
+ */
+function role_tree_get_tree($parent = 0, $max_depth = NULL) {
+	$children = array();
+	$parents = array();
+	$roles = array();
+
+	$query = db_select('role', 'r');
+	$query->join('role_hierarchy', 'h', 'h.rid = r.rid');
+	$result = $query
+		->fields('r')
+		->fields('h', array('parent'))
+		->orderBy('r.weight')
+		->orderBy('r.name')
+		->execute();
+
+	foreach ($result as $role) {
+		$children[$role->parent][] = $role->rid;
+		$parents[$role->rid][] = $role->parent;
+		$roles[$role->rid] = $role;
+	}
+
+	$max_depth = (!isset($max_depth)) ? count($children) : $max_depth;
+	$tree = array();
+
+	$process_parents = array();
+	$process_parents[] = $parent;
+
+	while (count($process_parents)) {
+		$parent = array_pop($process_parents);
+		$depth = count($process_parents);
+		if ($max_depth > $depth && !empty($children[$parent])) {
+			$has_children = FALSE;
+			$child = current($children[$parent]);
+			do {
+				if (empty($child)) {
+					break;
+				}
+				$role = $roles[$child];
+				if (isset($parents[$role->rid])) {
+					$role = clone $role;
+				}
+				$role->depth = $depth;
+				unset($role->parent);
+				$role->parents = $parents[$role->rid];
+				$tree[] = $role;
+				if (!empty($children[$role->rid])) {
+					$has_children = TRUE;
+
+					$process_parents[] = $parent;
+					$process_parents[] = $role->rid;
+
+					reset($children[$role->rid]);
+					next($children[$parent]);
+					break;
+				}
+			} while ($child = next($children[$parent]));
+
+			if (!$has_children) {
+				reset($children[$parent]);
+			}
+		}
+	}
+
+	return $tree;
+}

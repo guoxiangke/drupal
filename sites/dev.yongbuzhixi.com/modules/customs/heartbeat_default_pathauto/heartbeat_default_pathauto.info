@@ -1,0 +1,7 @@
+name = heartbeat_default_pathauto
+description = heartbeat_default + pathauto link.
+version = 1.1
+core = 7.x
+package = A-DEV
+dependencies[] = heartbeat_defaults
+dependencies[] = pathauto

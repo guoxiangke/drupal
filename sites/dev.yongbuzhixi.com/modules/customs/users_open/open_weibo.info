@@ -1,0 +1,6 @@
+name = open_weibo
+dependencies[] = open_users
+description = 新浪微博OauthV2
+core = 7.x
+package = "A-DEV"
+configure = admin/config/openusers/weibo

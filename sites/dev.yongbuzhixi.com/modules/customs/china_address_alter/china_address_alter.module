@@ -1,0 +1,165 @@
+<?php
+/**
+ * Implements hook_field_widget_form().
+ */
+function china_address_alter_field_widget_form_alter(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  //$lang = isset($form['language']['#value']) ? $form['language']['#value'] : 'und';
+  $lang = 'und';
+  switch ($instance['widget']['type']) {   
+    case 'china_address_default':          
+      // Set default value
+      $province = 2;
+      $city = 52;
+      $county = 500;
+      
+      // province
+      if ($field['settings']['china_address_level'] == CHINA_ADDRESS_CITY_COUNTY && $field['settings']['china_address_province_default']){
+        $province = $field['settings']['china_address_province_default'];
+      }
+      else if (isset($form_state['values'][$field['field_name']][$lang ][0]['province'])) {
+        // Ajax callback
+        $province = $form_state['values'][$field['field_name']][$lang ][0]['province'];
+      }
+      else if (isset($form_state['values']['profile_main'])){//XXX fixed for love profile. 
+        $province = $form_state['values']['profile_main'][$field['field_name']][$lang ][0]['province'];
+      }
+      else if (isset($form_state['values']['profile_believes'])){//XXX fixed for love profile. 
+        $province = $form_state['values']['profile_believes'][$field['field_name']][$lang ][0]['province'];
+      }
+      else if (isset($items[$delta]['province'])){
+
+        $province = $items[$delta]['province'];
+      } dpm($form_state['values']);
+      //dpm($province,'$province');
+      // city
+      if (isset($form_state['values'][$field['field_name']][$lang ][0]['city'])) {
+        // Ajax callback
+        $city = $form_state['values'][$field['field_name']][$lang ][0]['city'];
+      }else if (isset($form_state['values']['profile_main'])){//XXX fixed for love profile. 
+        $city = $form_state['values']['profile_main'][$field['field_name']][$lang ][0]['city'];
+      }else if (isset($form_state['values']['profile_believes'])){//XXX fixed for love profile. 
+        $city = $form_state['values']['profile_believes'][$field['field_name']][$lang ][0]['city'];
+      }
+      else if (isset($items[$delta]['city'])){
+        $city = $items[$delta]['city'];
+      }
+
+      $cities = china_address_cities($province); 
+      $city_keys = array_keys($cities);
+ 
+      if (!in_array($city, $city_keys)) {
+        $city = $city_keys[0];
+      }
+
+      // county
+      if (isset($form_state['values'][$field['field_name']][$lang ][0]['county'])) {
+        // Ajax callback
+        $county = $form_state['values'][$field['field_name']][$lang ][0]['county'];
+      }
+      else if (isset($items[$delta]['county'])){
+        $county = $items[$delta]['county'];
+      }
+      $counties = china_address_counties($city);   
+      $county_keys = array_keys($counties);
+      if (!in_array($county, $county_keys)) {   
+        $county = $county_keys[0];
+      }
+      
+      // detail
+      $detail = isset($items[$delta]['detail']) ? $items[$delta]['detail'] : '';
+
+      $element['#prefix'] = '<div id="china-address-dropdown-replace-' . str_replace('_', '-', $field['field_name']) . '" class="china-address-dropdown-replace" >';
+      $element['#suffix'] = '</div>';
+      $element['#type'] = 'fieldset';
+      $element['#attached'] = array(
+        'css' => array(
+          array(
+            'data' => '.china-address-dropdown-replace .form-item { float: left; margin-right: 10px;}',
+            'type' => 'inline',
+          ),
+        ),
+      );
+  
+      $ajax = array(
+        '#ajax' => array(
+          'callback' => 'china_address_dropdown_callback_alter',
+          'wrapper' => 'china-address-dropdown-replace-' . str_replace('_', '-', $field['field_name'])
+        )
+      );
+      $element['province'] = array(
+        '#type' => 'select',
+        '#title' => t('Province'),
+        '#default_value' => $province,
+        '#options' => china_address_provinces(),
+      ) + $ajax;     
+      $element['city'] = array(
+        '#type' => 'select',
+        '#title' => t('City'),
+        '#default_value' => $city,
+        '#options' => $cities
+      );
+      $element['county'] = array(
+        '#type' => 'select',
+        '#title' => t('County'),
+        '#default_value' => $county,
+        '#options' => $counties,
+      );     
+      if ($field['settings']['china_address_detail']){ 
+        $element['detail'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Detail'),
+          '#default_value' => $detail,
+        );
+      }
+                    
+      switch ($field['settings']['china_address_level']) {
+        case CHINA_ADDRESS_FULL : 
+          $element['city'] += $ajax;
+          break;
+        case CHINA_ADDRESS_PROVINCE_CITY : 
+          unset($element['county']);
+          break;
+        case CHINA_ADDRESS_CITY_COUNTY : 
+          unset($element['province']);
+          $element['city'] += $ajax;
+          break;
+      }
+      break;   
+  }
+
+  return $element;
+}
+
+
+/**
+ * Selects dropdown to be returned for re-rendering
+ *
+ * @return renderable array 
+ */
+function china_address_dropdown_callback_alter($form, $form_state) {
+  // $lang = isset($form['language']['#value']) ? $form['language']['#value'] : 'und';
+  $lang = 'und';
+  if ($form['#form_id'] == 'field_ui_field_edit_form') {
+    return $form['instance']['default_value_widget'][$form['#field']['field_name']][$lang][0];
+  }
+  else if ($form['#form_id'] == 'profile2_edit_believes_form') {
+  	//XXX fixed for love profile.
+		array_shift($form_state['triggering_element']['#parents']);
+    return $form['profile_believes'][$form_state['triggering_element']['#parents'][0]];
+  }
+  else if ($form['#form_id'] == 'user_register_form'
+  || $form['#form_id'] == 'user_profile_form' 
+  || $form['#form_id'] == 'profile2_edit_main_form') {
+  	//XXX fixed for love profile.
+  	
+		$profile_type = $form_state['triggering_element']['#parents'][0];//profile_main
+		array_shift($form_state['triggering_element']['#parents']);
+
+    return $form[$profile_type][$form_state['triggering_element']['#parents'][0]];
+    //['default_value_widget'][$form['#field']['field_name']][$lang][0];
+  }
+  else {
+    return $form[$form_state['triggering_element']['#parents'][0]][$lang][0];
+  }
+}
+?>
