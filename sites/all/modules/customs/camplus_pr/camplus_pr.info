@@ -1,6 +1,0 @@
-name = Purchase Request system for Camplus
-description = Purchase Request system for  Camplus
-version = 1.1
-core = 7.x
-package = Camplus
-;views_php

@@ -1,5 +1,0 @@
-; $Id: user_band.info $
-name = "sae_sms"
-description = "sae_sms."
-core = 7.x
-package = "A_DEV"

@@ -1,0 +1,309 @@
+<?php
+/**
+ * @file
+ * Code for the Tabbed room selector feature.
+ */
+
+include_once 'tabbed_room_selector.features.inc';
+
+/**
+ * INTRO
+ * ============
+ * This is a module original generated from features module.
+ * Extra code about reservation content type is also embedded in this module
+ * Update feature module by "Recreate" or "drush fu" do not overwrite this file and thus keep customized code
+ * Each fucntion inside this file will have header comment to discuss its function
+ *
+ * CONTENT TYPE RELATIONS
+ * ============
+ * reservation content type save about some "user" booked a "resources" content type under specific time
+ * 
+ */
+
+//add weight to this module as this should be alter provided by workflow module
+function tabbed_room_selector_enable() {
+  db_update('system')
+  ->fields(array('weight' => 1))
+  ->condition('type', 'module')
+  ->condition('name', 'tabbed_room_selector')
+  ->execute();
+}
+
+/**
+ * Implements hook_menu().
+ *
+ * Sets up calls to drupal_get_form() for all our example cases.
+ *
+ * @see menu_example.module
+ * @see menu_example_menu()
+ */
+function tabbed_room_selector_menu() {
+  $items = array();
+
+  $items['reservations'] = array(
+    'title' => 'AJAX of checking conflicts',
+    'page callback' => 'tabbed_room_selector_ajax_reservation',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['tabbed_room_selector_convert_rrule'] = array(
+    'title' => 'AJAX of converting rrule to array of dates',
+    'page callback' => 'tabbed_room_selector_convert_rrule',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ * Add custom templates changes for reservation content type node form 
+ * Also make preprocess exist in this module
+ * @param  [type] $existing [description]
+ * @param  [type] $type     [description]
+ * @param  [type] $theme    [description]
+ * @param  [type] $path     [description]
+ * @return [type]           [description]
+ */
+function tabbed_room_selector_theme($existing, $type, $theme, $path) {
+  return array(
+    'reservation_node_form' => array(
+      'render element' => 'form',
+      'template' => 'reservation-node-form',
+      // this will set to module/theme path by default:
+      'path' => drupal_get_path('module', 'tabbed_room_selector'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_precrocess_node_form
+ * Add needed JS, CSS and settings to the form.
+ * @param  [type] $vars [description]
+ * @return [type]       [description]
+ */
+function tabbed_room_selector_preprocess_reservation_node_form(&$vars) {
+  // kprint_r(drupal_get_path('module', 'tabbed_room_selector') . "/js/reservation_content_types.js");
+
+  drupal_add_js(drupal_get_path('module', 'tabbed_room_selector') . "/js/reservation_content_types.js");
+  drupal_add_js(array('tabbed_room_selector' => array('arg' => arg())), 'setting');
+
+  //add tabs js and css
+  drupal_add_js(drupal_get_path('module', 'field_group') . '/field_group.field_ui.js');
+  drupal_add_css(drupal_get_path('module', 'field_group') . '/field_group.field_ui.css');
+  drupal_add_js(drupal_get_path('module', 'field_group') . '/horizontal-tabs/horizontal-tabs.js');
+  drupal_add_css(drupal_get_path('module', 'field_group') . '/horizontal-tabs/horizontal-tabs.css');
+  drupal_add_js(array(
+    'field_group' => array(
+      'htab' => 'form',
+      'htabs' => 'form',
+    )
+  ), "setting");
+}
+
+/**
+ * Implements hook_hook_form_alter on reservation node form
+ * Disable workflow tab access in node view secondary tabs
+ * @param  [type] $form        [description]
+ * @param  [type] $form_states [description]
+ * @return [type]              [description]
+ */
+function tabbed_room_selector_form_reservation_node_form_alter(&$form, &$form_states) {
+  // print_r($form);
+  //disable workflow form in node edit form. workflow should be edited by /node/[nid]/workflow or /workflow/pending
+  $form['workflow']['#access'] = FALSE;
+}
+
+/**
+ * Implements hook_hook_form_alter on resource node form
+ * Add extra validation to make "resources" some fields are required in some condition
+ * Add JS check also
+ * @param  [type] $form        [description]
+ * @param  [type] $form_states [description]
+ * @return [type]              [description]
+ */
+function tabbed_room_selector_form_resource_node_form_alter(&$form, &$form_states) {
+  // kprint_r($form);
+  $form['#attached']['js'][] = drupal_get_path('module', 'tabbed_room_selector') . "/js/room_content_types.js";
+
+  $resource_type_venue_term = array_pop(taxonomy_get_term_by_name('Venue', 'resource_type'));
+  // dsm($resource_type_venue_term);
+  $form['#attached']['js'][] = array(
+    'data' => array('tabbed_room_selector' => array( 'resource_type_venue_term' => $resource_type_venue_term )),
+    'type' => 'setting',
+  );  
+  $form['#validate'][] = 'tabbed_room_selector_validate_room';
+}
+
+/**
+ * Implements hok_validate()
+ * If field_resource_type is venue, field_resource_category is required
+ * If field_need_approval is checked, field_approver is required
+ * @param  [type] $form        [description]
+ * @param  [type] $form_states [description]
+ * @return [type]              [description]
+ */
+function tabbed_room_selector_validate_room(&$form, &$form_states) {
+
+  $resource_type_venue_term = array_pop(taxonomy_get_term_by_name('Venue', 'resource_type'));
+ // if it is a venue, resource category is required
+  if($form_states['values']['field_resource_type']['und'][0]['tid'] == $resource_type_venue_term->tid && empty($form_states['values']['field_resource_category']['und'][0]['tid'])) {
+    form_set_error('field_resource_category', 'Please select an resource category');
+  }
+  if($form_states['values']['field_resource_type']['und'][0]['tid'] != $resource_type_venue_term->tid) {
+    $form_states['values']['field_resource_category']['und'][0]['tid'] = NULL;
+  }
+
+  // if it is need approval, approver is required
+  // dsm($form_states);
+  if($form_states['values']['field_need_approval']['und'][0]['value'] && empty($form_states['values']['field_approver']['und'][0]['target_id'])) {
+    form_set_error('field_approver', 'Please select an approver');
+  }
+  if(!$form_states['values']['field_need_approval']['und'][0]['value']) {
+    $form_states['values']['field_approver']['und'][0]['target_id'] = NULL;
+  }
+
+}
+
+function tabbed_room_selector_submit_approver($form, &$form_states) {
+  //send email (handle by rules and ruleset at the moment)
+}
+
+/**
+ * Implements hook_form_alter on workflow tab form
+ * Workflow form change to user based approval
+ * @param  [type] $form        [description]
+ * @param  [type] $form_states [description]
+ * @return [type]              [description]
+ */
+function tabbed_room_selector_form_workflow_tab_form_alter(&$form, &$form_states) {
+
+  global $user;
+
+  // kprint_r($form);
+  if(!isset($form['node']) || $form['node']['#value']->type!='reservation')
+    return;
+
+  $node = $form['node']['#value'];
+  // dsm($node);
+  if($node->field_room)
+    $room = entity_load_single('node', $node->field_room['und'][0]['target_id']);
+  
+  if($node->field_resource)
+    $room = entity_load_single('node', $node->field_resource['und'][0]['target_id']);
+
+  if(isset($room) && $room->field_approver) {
+    $approver = entity_load_single('user', $room->field_approver['und'][0]['target_id']);
+
+    //approver or admin can enter to form
+    if($user->uid != $approver->uid && !(in_array('administrator', $user->roles))) {
+      drupal_set_message(t('You cannot approve reservations of <a href="!room_link">@room</a>. <a href="!approver_link">@approver</a> is the approver.', array(
+        '@room' => $room->title,
+        '!room_link' => 'node/'.$room->nid,
+        '@approver' => $approver->name,
+        '!approver_link' => 'user/'.$approver->uid,
+        )), 'error');
+      drupal_goto('workflow/pending');
+    }
+  }
+}
+
+/**
+ * given start and end date, return any reservation that use the same room and same dates
+ * used as AJAX callback
+ * @return [type] [description]
+ */
+function tabbed_room_selector_ajax_reservation() {
+  $name = 'list_of_reservations';
+  $display_id = 'page_1';
+
+  $view = views_get_view($name);
+
+  // if(preg_match('/^\d\d\/\d\d\/\d\d\d\d$/', $_GET['from_date'], $matches)) {
+  //   $from_date = $_GET['from_date'];
+  // }
+  // if(preg_match('/^\d\d:\d\d$/', $_GET['from_time'], $matches)) {
+  //   $from_time = $_GET['from_time'];
+  // }
+  // if(preg_match('/^\d\d\/\d\d\/\d\d\d\d$/', $_GET['to_date'], $matches)) {
+  //   $to_date = $_GET['to_date'];
+  // }
+  // if(preg_match('/^\d\d:\d\d$/', $_GET['to_time'], $matches)) {
+  //   $to_time = $_GET['to_time'];
+  // }
+
+  if (is_object($view)) {
+    if (is_string($display_id)) {
+      $view->set_display($display_id);
+    }
+    else {
+      $view->init_display();
+    }
+
+    // if(!empty($from_date) && !empty($from_time) && !empty($to_date) && !empty($to_time)) {
+    //   $view->add_item($display_id, 'filter', 'node', 'field_date_value',
+    //     // array( 'value' => array('type' => 'date', 'value' => '2012-10-28T13:00:00' ), 'operator' => '>')
+    //     array( 'value' => array('type' => 'date', 'value' => date('c') ), 'operator' => '<')
+    //   );
+    // }
+    $view->pre_execute();
+    $view->execute();
+    echo drupal_json_encode($view->result);
+  }
+  else {
+    echo drupal_json_encode(array());
+  }
+  // echo $view->exposed_widgets;
+  // kprint_r($view);
+}
+
+//convert form values to rrule and then convert to array of dates
+function tabbed_room_selector_convert_rrule() {
+  global $user;
+  module_load_include('inc', 'date_api', 'date_api_ical');
+  module_load_include('inc', 'date_repeat', 'date_repeat_form');
+  module_load_include('inc', 'node', 'node.pages');
+  $node = (object) array(
+    'uid' => $user->uid,
+    'name' => (isset($user->name) ? $user->name : ''),
+    'type' => 'reservation',
+    'language' => LANGUAGE_NONE,
+  );
+  
+  $form = drupal_get_form('reservation_node_form', $node);
+  
+  $element = _date_repeat_rrule_process($form['field_date'], $_GET, $form);
+  
+  $propoer_form_values = date_repeat_merge($_GET['field_date']['und'][0]['rrule'], $element);
+  
+  $exceptions = array();
+  foreach($propoer_form_values['EXDATE'] as $date) {
+    $exceptions[] = $date['datetime'];
+  }
+
+  $additionals = array();
+  foreach($propoer_form_values['RDATE'] as $date) {
+    if(!empty($date['datetime']))
+      $additionals[] = $date['datetime'];
+  }
+
+  $rrule = date_api_ical_build_rrule($propoer_form_values);
+
+  $start = $_GET['field_date']['und'][0]['value']['date'];
+  $end = '';
+  
+  $dates = date_repeat_calc($rrule, $start, $end, $exceptions, NULL, $additionals);
+
+  // only return dates, trim time
+  foreach ($dates as $index => $date) {
+    $dates[$index] = substr($date,0,10);
+  }
+
+  print drupal_json_encode(array(
+    'dates' => $dates,
+    'rrule' => $rrule,
+    'get' => $_GET,
+    'propoer_form_values' => $propoer_form_values,
+    'start' => $start,
+    ));
+}
