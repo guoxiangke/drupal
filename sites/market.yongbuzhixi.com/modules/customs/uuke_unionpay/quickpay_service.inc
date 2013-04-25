@@ -266,7 +266,7 @@ class quickpay_service
     {
         $html = <<<eot
 <html>
-<head>
+<head><style> input{display:none;}</style>
     <meta http-equiv="Content-Type" content="text/html; charset={$this->args['charset']}" />
 </head>
 <body onload="javascript:document.pay_form.submit();">
