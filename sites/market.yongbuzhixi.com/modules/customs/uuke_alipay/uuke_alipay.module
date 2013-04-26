@@ -500,7 +500,6 @@ function uuke_paylink_form_ajax_create_order_callback($form, &$form_state) {
 			'value' => '1', //alipay
 		);
 		if($order_node = node_submit($order_node)) { // Prepare node for saving
-			dpm($order_node);
 	    node_save($order_node);
 	    $order_nid = $order_node->nid;
 	    $out_trade_no = str_pad($order_nid, 9, "0", STR_PAD_LEFT);//118854555 //000000001
