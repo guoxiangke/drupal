@@ -158,6 +158,7 @@ function uuke_alipay_for_node($product_node) {
 		$order_node = new stdClass();
 		$order_node->type = 'uuke_alipay_order';
 		$order_node->title    = 'pending';
+		$order_node->language = LANGUAGE_NONE;
 
 		$order_node->uid = $user->uid;
 		$order_node->field_uuke_alipay_order_uid[LANGUAGE_NONE][] = array(
@@ -359,7 +360,164 @@ function uuke_alipay_paylink_block() {
 	$output = drupal_render($node['alipay']);
 	if(isset($node['unionpay']))
 		$output .= '<br/>'.drupal_render($node['unionpay']);
-  return $output;
+  // return $output;
+  $form_state = array();
+  $form = drupal_get_form('uuke_paylink_form',$form_state, $node);
+  return drupal_render($form);
+}
+
+function uuke_paylink_form($form, &$form_state) {
+
+	$args = func_get_args();
+	$product_node = $args[3]['#node'];
+	$order_nid = uuke_alipay_order_check($product_node,$account=NULL);
+
+	$form['alipay_link'] = array(
+		'#type' => 'markup',
+    '#markup' => 'Alipay',//l('Alipay', "node/$product_node->nid/alipay"),
+    // '#attributes' =>array('class'=>array('uuke_pay_button'))
+    '#prefix' => '<a class="uuke_pay_button" href="node/'.$product_node->nid.'/alipay" target="_blank">',
+    '#suffix' => '</a>',
+	);
+
+	if(module_exists('uuke_unionpay')) {
+		$form['unionpay_link'] = array(
+			'#type' => 'item',
+	    '#title' => l('Unionpay', "node/$product_node->nid/unionpay"),
+		);
+		if($order_nid && $order_node = node_load($order_nid)) {
+			$price = $product_node->field_uuke_price[LANGUAGE_NONE][0]['value'];
+			$out_trade_no = str_pad($order_nid, 9, "0", STR_PAD_LEFT);
+			$created = $order_node->created;
+
+			$base_path = url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q=');
+			module_load_include('inc', 'uuke_unionpay', 'quickpay_service');
+			//下面这行用于测试，以生成随机且唯一的订单号
+			mt_srand(quickpay_service::make_seed());
+
+			$param['transType']             = quickpay_conf::CONSUME;  //交易类型，CONSUME or PRE_AUTH
+
+			$param['orderAmount']           = $price*100;        //交易金额
+			$param['orderNumber']           = $out_trade_no;//date('YmdHis') . strval(mt_rand(100, 999)); //订单号，必须唯一
+			$param['orderTime']             = date('YmdHis', $created);   //交易时间, YYYYmmhhddHHMMSS
+			$param['orderCurrency']         = quickpay_conf::CURRENCY_CNY;  //交易币种，CURRENCY_CNY=>人民币
+
+			$param['customerIp']            = $_SERVER['REMOTE_ADDR'];  //用户IP
+			$param['frontEndUrl']           = $base_path."unionpay/return";    //前台回调URL
+			$param['backEndUrl']            = $base_path."unionpay/notify";     //后台回调URL
+			// 可填空字段
+			$param['commodityUrl']          = $base_path.'node/'.$product_node->nid;  //商品URL
+			$param['commodityName']         = $product_node->type;//check_markup($product_node->title);   //商品名称 不可以有特殊符号
+			$param['commodityUnitPrice']    = $price*100;        //商品单价
+			//商品数量
+			$quantity = "1";
+			//必填，建议默认为1，不改变值，把一次交易看成是一次下订单而非购买一件商品
+			$param['commodityQuantity']     = $quantity;            //商品数量
+			$pay_service = new quickpay_service($param, quickpay_conf::FRONT_PAY);
+			// $html = $pay_service->create_html();
+
+			// header("Content-Type: text/html; charset=" . quickpay_conf::$pay_params['charset']);
+			// echo $html; //自动post表单
+		  foreach ($pay_service->args as $key => $value) {
+	      // $html .= "    <input type=\"hidden\" name=\"{$key}\" id=\"{$key}\" value=\"{$value}\" />\n";
+	      $form[$key] = array(
+	      	'#type' => 'hidden',
+	      	'#value' => $value,
+	      );
+	    }
+	    $form['#action'] = url($pay_service->api_url, array('external' => true));
+	    $form['unionpay_link'] = array(
+				'#type' => 'submit',
+   			'#value' => t('Unionpay'),
+			);
+		}else {
+			$form['unionpay_link'] = array(
+				'#type' => 'button', 
+				'#value' => t('Unionpay'), 
+				'#ajax' =>array(
+					'callback' => 'uuke_paylink_form_ajax_create_order_callback',
+					'wrapper' => 'uuke-paylink-form',//$form['#id']
+					// 'method' => 'replace',
+					// 'effect' => 'fade',
+				),
+ 			);
+		}
+		$form['#attached']['js'] = array(
+		  drupal_get_path('module', 'uuke_alipay') . '/uuke_unionpay.js' => array(
+		  	'type' => 'file',
+		  ),
+		);
+	}
+	
+	return $form;
+}
+
+function uuke_paylink_form_ajax_create_order_callback($form, &$form_state) {
+	//create the node, return form with order
+	//生成本站订单begin
+	global $user;
+	$product_node = $form_state['build_info']['args'][1]['#node'];
+	$price = $product_node->field_uuke_price[LANGUAGE_NONE][0]['value'];
+
+	if($order_nid = uuke_alipay_order_check($product_node,$account=NULL)) {
+		$order_node = node_load($order_nid);
+	}
+	if(!$order_node) {
+		$order_node = new stdClass();
+		$order_node->type = 'uuke_alipay_order';
+		$order_node->title    = 'pending';
+		$order_node->language = LANGUAGE_NONE;
+		$order_node->uid = $user->uid;
+		$order_node->field_uuke_alipay_order_uid[LANGUAGE_NONE][] = array(
+			'target_id' => $user->uid,
+		);
+		$order_node->field_uuke_alipay_product_nid[LANGUAGE_NONE][] = array(
+			'target_id' => $product_node->nid,
+		);
+		$order_node->field_uuke_alipay_product_title[LANGUAGE_NONE][] = array(
+			'value' => $product_node->title,
+		);  
+		// $order_node->field_uuke_alipay_trade_no[LANGUAGE_NONE][] = array(
+		// 	'value' => $request['trade_no'],
+		// );
+		$order_node->field_uuke_alipay_product_type[LANGUAGE_NONE][] = array(
+			'value' => $product_node->type,
+		);
+		$order_node->field_uuke_alipay_product_price[LANGUAGE_NONE][] = array(
+			'value' => $price,
+		);
+		// $order_node->field_uuke_alipay_quantity[LANGUAGE_NONE][] = array(
+		// 	'value' => $request['quantity'],
+		// );
+		// $order_node->field_uuke_alipay_return[LANGUAGE_NONE][] = array(
+		// 	'value' => serialize($request),//$_GET
+		// );
+
+		$order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][] = array(
+			'value' => uuke_alipay_trade_status_to_chinese('pending'),//$request['trade_status']
+		);	
+		$order_node->field_uuke_pay_method[LANGUAGE_NONE][] = array(
+			'value' => '1', //alipay
+		);
+		if($order_node = node_submit($order_node)) { // Prepare node for saving
+			dpm($order_node);
+	    node_save($order_node);
+	    $order_nid = $order_node->nid;
+	    $out_trade_no = str_pad($order_nid, 9, "0", STR_PAD_LEFT);//118854555 //000000001
+	    // drupal_set_message(t("订单:" . l($order_node->title,'node/'.$order_nid) . " 已创建\n"), 'status');
+		}else{
+			drupal_set_message(t('fiald to create order node'), 'error');
+			drupal_goto('node/'.$product_node->nid);
+		}	//生成订单 end 
+	}
+	     //  $new_form_build = drupal_build_form($form['#form_id'], $new_form_state);
+    // $new_form_output = drupal_render($new_form_build);
+	$form = drupal_get_form('uuke_paylink_form',$form_state, $order_node);
+	$commands = array();
+	// ctools_include('ajax');
+  $commands[] = ajax_command_replace('#uuke-paylink-form', drupal_render($form));
+  // $commands[] = ajax_command_invoke(NULL, 'autoSubmitUnionpay');
+	return array('#type' => 'ajax', '#commands' => $commands);//$form;//
 }
 /**
  * 判断某节点商品是否购买
