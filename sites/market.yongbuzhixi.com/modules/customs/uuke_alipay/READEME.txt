@@ -23,3 +23,7 @@ function uuke_alipay_is_paid($nid) {
 function uuke_alipay_all_paid($account=NULL,$content_type='app') {
 
 }
+
+Paylink block show on node page.
+payblock: please set the block  Only the listed pages: node/*
+paylink: node/$node/alipay

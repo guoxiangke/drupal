@@ -1,0 +1,3 @@
+two way of pay:
+2.blok link form submit
+1.node/%node/unionpay 
