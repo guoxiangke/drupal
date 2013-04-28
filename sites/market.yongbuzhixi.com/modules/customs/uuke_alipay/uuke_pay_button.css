@@ -54,3 +54,25 @@ padding: 4px 17px;
 -webkit-border-radius: 15px;
 border-radius: 15px;
 }
+
+/*for markt online theme,you can delete that*/
+a.uuke_pay_button {
+background: -moz-linear-gradient(top, #93c5e4 0%, #0073ba 50%, #006caf 51%, #00598e 100%);
+background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#93c5e4), color-stop(50%,#0073ba), color-stop(51%,#006caf), color-stop(100%,#00598e));
+background: -webkit-linear-gradient(top, #93c5e4 0%,#0073ba 50%,#006caf 51%,#00598e 100%);
+background: -o-linear-gradient(top, #93c5e4 0%,#0073ba 50%,#006caf 51%,#00598e 100%);
+background: -ms-linear-gradient(top, #93c5e4 0%,#0073ba 50%,#006caf 51%,#00598e 100%);
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#93c5e4', endColorstr='#00598e',GradientType=0 );
+background: linear-gradient(top, #93c5e4 0%,#0073ba 50%,#006caf 51%,#00598e 100%);
+}
+a.uuke_pay_button{
+border: 0;
+outline: 0;
+padding: 0.25em 0.5em;
+text-transform: lowercase;
+cursor: pointer;
+font: normal 1.4em/100% Verdana, Tahoma, sans-serif;
+margin-right: 0.5em;
+background: #93c5e4;
+color: #FFF;
+}
