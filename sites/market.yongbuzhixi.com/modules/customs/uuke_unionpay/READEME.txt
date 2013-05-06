@@ -1,3 +1,20 @@
 two way of pay:
 2.blok link form submit
 1.node/%node/unionpay 
+
+2013-04-28 Weekly Report
+1 Improve the order systems. 
+	1.1 Order is a node with content type named: uuke_alipay_order,
+	1.2 Order has many fields to record the pay service order info. we record all the info for security,
+	1.3 Order was created by system,  updated the order when trade status changed,all automaticly.
+	1.4 Order can't be motify by others except user 1.
+	1.5 Provide some default views for orders. Like: All orders & My orders list.
+2 Improve the uuke pay modules(uuke_alipay & uuke_unionpay). Complate the main functions of uuke pay modules.
+	2.1 test and debug the alipay Asynchronous notification to make it works.
+	2.2 Provide uuke_alipay_is_paid & uuke_alipay_all_paid & uuke_alipay_get_order_nid functions to extended features of uuke_pay.
+	2.3 Integrated with alipay auto send goods service, after user paid ,auto send goods,no need to to alipay to click send.
+	2.4 One click order for unionpay, ajax creat order if no.
+3.Familiar with Ubuntu linux system, config apache and install drupal.
+4.Some design and learn omega sub_theme
+5.Learn drupal panels, ctools_plugin 
+6.Test the pay modules and deploy online & fit for online site.

@@ -3,4 +3,4 @@ description = UUKE unionpay Module
 package = dev
 core = 7.x
 dependencies[] = uuke_alipay
-dependencies[] = context
+;dependencies[] = context

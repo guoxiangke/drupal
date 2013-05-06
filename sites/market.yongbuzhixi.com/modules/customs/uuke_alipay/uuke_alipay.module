@@ -141,7 +141,7 @@ function uuke_alipay_for_node($product_node) {
 	$service = variable_get('uuke_alipay_service', '');
 
   //如果还有未完成的订单，不需要重复创建多个订单，对于一个商品
-	if($order_nid = uuke_alipay_order_check($product_node,$account=NULL)) {
+	if($order_nid = uuke_alipay_get_order_nid($product_node,$account=NULL)) {
 		//您的订单已生成，请点击付款去相应页面。
 	  $out_trade_no = str_pad($order_nid, 9, "0", STR_PAD_LEFT);//118854555 //000000001
 		// dpm(t('您的订单:'.$out_trade_no.'已生成，请点击付款去相应页面。'));
@@ -286,7 +286,7 @@ function uuke_alipay_show_link($node) {
 				drupal_set_message(t('本商品免费或不可出售。'), 'status', FALSE);
 			}else{
 				//TODO:判断是否已购买,如果购买了，显示下载链接已安装，若无，显示购买			
-				if($order_nid = uuke_alipay_order_check($node,$account=NULL)) {
+				if($order_nid = uuke_alipay_get_order_nid($node,$account=NULL)) {
 					//您的订单已生成，请点击付款去相应页面。
 					$order_node = node_load($order_nid);
 					$trade_status = $order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'];
@@ -324,7 +324,7 @@ function uuke_alipay_node_view($node, $view_mode, $langcode) {
 			}else{
 				//TODO:判断是否已购买,如果购买了，显示下载链接已安装，若无，显示购买
 				$show = FALSE;
-				if($order_nid = uuke_alipay_order_check($node,$account=NULL)) {
+				if($order_nid = uuke_alipay_get_order_nid($node,$account=NULL)) {
 					//您的订单已生成，请点击付款去相应页面。
 					$order_node = node_load($order_nid);
 					$trade_status = $order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'];
@@ -343,10 +343,10 @@ function uuke_alipay_node_view($node, $view_mode, $langcode) {
 				}else{
 					$show = TRUE;
 				}
-				context_set('uuke_alipay', 'pay_link_block_show', FALSE);
-				context_set('uuke_alipay', 'pay_link_nid', $node->nid);
+				// context_set('uuke_alipay', 'pay_link_block_show', FALSE);
+				// context_set('uuke_alipay', 'pay_link_nid', $node->nid);
 				if($show) {
-					context_set('uuke_alipay', 'pay_link_block_show', TRUE);
+					// context_set('uuke_alipay', 'pay_link_block_show', TRUE);
 					// $base_path = url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q=');
 					// $node->content['alipay'] =  array(
 					// 	'#markup' => t('Alipay'),
@@ -384,7 +384,7 @@ function uuke_alipay_block_view($delta = '') {
   //必须是当前节点
   $nid = arg(1); //node/1
   $node = node_load($nid);
-  if($node && uuke_alipay_show_link($node)) {
+  if($node) {// && uuke_alipay_show_link($node)
   	 switch ($delta) {
 	    case 'alipay_link':
 	      // $block['subject'] = t('Alipay link');
@@ -395,22 +395,78 @@ function uuke_alipay_block_view($delta = '') {
   return $block;
 }
 function uuke_alipay_paylink_block($nid) {
-	// $node = node_load(arg(1));//TODO: get form context 
+	$node = node_load($nid);//TODO: get form context  context_get('uuke_alipay', 'pay_link_block_show')
 	$base_path = url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q=');
 	$output = array();
-	if(1||context_get('uuke_alipay', 'pay_link_block_show'))
-	$output =  array(
-		'#markup' => t('Alipay'),
-		'#prefix' => '<a class= "uuke_pay_button button" href="'.$base_path.'node/'.$nid.'/alipay"">',// target="_blank
-		'#suffix' => '</a>', 
-		'#weight' => -19,
-	);
-	drupal_add_css(drupal_get_path('module', 'uuke_alipay') . '/uuke_pay_button.css');
 
+
+
+	if(uuke_alipay_show_link($node)) {
+
+		$output =  array(
+			'#markup' => t('Alipay'),
+			'#prefix' => '<a class= "uuke_pay_button button" href="'.$base_path.'node/'.$nid.'/alipay"">',// target="_blank
+			'#suffix' => '</a>', 
+			'#weight' => -19,
+		);
+	}else {
+		$output =  array(
+			'#markup' => t('Paid'),
+			'#prefix' => '<a class= "uuke_pay_button button " id="pay_disabled" href="'.$base_path.'node/'.$nid.'/alipay" target="_blank">',//
+			'#suffix' => '</a>', 
+			'#weight' => -19,
+		);
+		drupal_add_js('jQuery(document).ready(function () {jQuery("#pay_disabled").bind("click", false); });', 'inline');
+	}
+	drupal_add_css(drupal_get_path('module', 'uuke_alipay') . '/uuke_pay_button.css');
 	// $node = node_view($node);
 	// $output = drupal_render($node['alipay']);
 	return drupal_render($output);
 }
+/**
+ * Implements hook_block_view().
+ */
+function uuke_alipay_block_view($delta = '') {
+  $block = array();
+  //必须是当前节点
+  $nid = arg(1); //node/1
+  $node = node_load($nid);
+  if($node) {// && uuke_alipay_show_link($node)
+  	 switch ($delta) {
+	    case 'alipay_link':
+	      // $block['subject'] = t('Alipay link');
+	      $block['content'] = uuke_alipay_paylink_block($nid);
+	      break;
+	  }
+  }
+  return $block;
+}
+function uuke_alipay_paylink_block($nid) {
+	$node = node_load($nid);//TODO: get form context  context_get('uuke_alipay', 'pay_link_block_show')
+	$base_path = url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q=');
+	$output = array();
+	if(uuke_alipay_show_link($node)) {
+		$output =  array(
+			'#markup' => t('Alipay'),
+			'#prefix' => '<a class= "uuke_pay_button button" href="'.$base_path.'node/'.$nid.'/alipay"">',// target="_blank
+			'#suffix' => '</a>', 
+			'#weight' => -19,
+		);
+	}else {
+		$output =  array(
+			'#markup' => t('Paid'),
+			'#prefix' => '<a class= "uuke_pay_button button " id="pay_disabled" href="'.$base_path.'node/'.$nid.'/alipay" target="_blank">',//
+			'#suffix' => '</a>', 
+			'#weight' => -19,
+		);
+		drupal_add_js('jQuery(document).ready(function () {jQuery("#pay_disabled").bind("click", false); });', 'inline');
+	}
+	drupal_add_css(drupal_get_path('module', 'uuke_alipay') . '/uuke_pay_button.css');
+	// $node = node_view($node);
+	// $output = drupal_render($node['alipay']);
+	return drupal_render($output);
+}
+
 
 /**
  * 判断某节点商品是否购买
@@ -419,7 +475,7 @@ function uuke_alipay_paylink_block($nid) {
 function uuke_alipay_is_paid($nid, $account=NULL) {
 	 //如果还有未完成的订单，不需要重复创建多个订单，对于一个商品
 	$product_node = node_load($nid);
-	if($order_nid = uuke_alipay_order_check($product_node,$account=NULL)) {
+	if($order_nid = uuke_alipay_get_order_nid($product_node,$account=NULL)) {
 		// dpm(t('您的订单:'.$out_trade_no.'已生成，请点击付款去相应页面。'));
 		$order_node = node_load($order_nid);
 		$trade_status = $order_node->field_uuke_alipay_trade_status[LANGUAGE_NONE][0]['value'];
@@ -516,7 +572,8 @@ function uuke_alipay_order_save($request,$order_nid) {
  * 判断是够已经有这个商品的历史订单了，如果有，返回订单nid，
  * 不再为该用户创建新的订单，用户可以在该订单上完成该产品的付款操作。
  */
-function uuke_alipay_order_check($product_node,$account=NULL) {
+//rename uuke_alipay_get_order_nid()
+function uuke_alipay_get_order_nid($product_node,$account=NULL) {
 	global $user;
 	if(!$account) $account = $user;
   $query = db_select('field_data_field_uuke_alipay_product_nid', 'p');
