@@ -69,6 +69,7 @@ function no_context_content_type_render($subtype, $conf, $args, $context) {
   {$ctools_help} and {$ctools_plugin_example_help}
   </div>
   ");
+  dVm($args);
   if (!empty($conf)) {
     $block->content .= '<div>The only information that can be displayed in this block comes from the code and its settings form: </div>';
     $block->content .= '<div style="border: 1px solid red;">' . var_export($conf, TRUE) . '</div>';

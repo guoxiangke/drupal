@@ -47,7 +47,7 @@ function ctools_plugin_example_context_create_relcontext($empty, $data = NULL, $
       // adding 'sample_relcontext_setting' to it.
       $context->data->description = 'relcontext_from__' . preg_replace('/[^a-z]/i', '', $data['sample_relcontext_setting']);
       $context->data->description .= '_from_configuration_sample_simplecontext_setting';
-      $context->title = t("Relcontext context from simplecontext");
+      $context->title = t("Relcontext context from simplecontext");dpm($context);
       return $context;
     }
   }
@@ -61,7 +61,7 @@ function ctools_plugin_example_context_create_relcontext($empty, $data = NULL, $
     // For this simple item we'll just create our data by stripping non-alpha and
     // prepend 'relcontext_' and adding '_created_from_from_simplecontext' to it.
     $context->data->description = 'relcontext_' . preg_replace('/[^a-z]/i', '', $data->data->description);
-    $context->data->description .= '_created_from_simplecontext';
+    $context->data->description .= '_created_from_simplecontext';dpm($context);
     return $context;
   }
 }
