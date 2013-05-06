@@ -20,6 +20,7 @@ function uuke_alipay_views_default_views() {
 	$handler = $view->new_display('default', 'Master', 'default');
 	$handler->display->display_options['title'] = 'All Order LIst';
 	$handler->display->display_options['access']['type'] = 'perm';
+	$handler->display->display_options['access']['perm'] = 'access my orders';
 	$handler->display->display_options['cache']['type'] = 'none';
 	$handler->display->display_options['query']['type'] = 'views_query';
 	$handler->display->display_options['query']['options']['query_comment'] = FALSE;
@@ -164,7 +165,7 @@ function uuke_alipay_views_default_views() {
 	$handler = $view->new_display('page', 'All order list page', 'all_order_list');
 	$handler->display->display_options['defaults']['access'] = FALSE;
 	$handler->display->display_options['access']['type'] = 'perm';
-	$handler->display->display_options['access']['perm'] = 'administer uuke alipay configuration';
+	$handler->display->display_options['access']['perm'] = 'access all orders';
 	$handler->display->display_options['defaults']['fields'] = FALSE;
 	/* 字段: 内容: 标题 */
 	$handler->display->display_options['fields']['title']['id'] = 'title';

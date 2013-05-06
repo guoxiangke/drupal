@@ -2,7 +2,13 @@
 2.实现对商品节点的单次购买
 3.商家订单管理系统，卖家自动发货系统（默认付款后就自动发货）
 4.订单类型为系统创建，只有管理员才可以编辑
+
 Install：
+1.enable the module 
+2.set the content type for sale.
+3.set the alipay config
+4.show paylink block on node view page.
+5.give the role right permissions for order views page.(Optional)
 
 TODO:
 1.批量商品购买 数量>1
@@ -24,6 +30,4 @@ function uuke_alipay_all_paid($account=NULL,$content_type='app') {
 
 }
 
-Paylink block show on node page.
-payblock: please set the block  Only the listed pages: node/*
 paylink: node/$node/alipay
