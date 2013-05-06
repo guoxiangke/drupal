@@ -398,53 +398,6 @@ function uuke_alipay_paylink_block($nid) {
 	$node = node_load($nid);//TODO: get form context  context_get('uuke_alipay', 'pay_link_block_show')
 	$base_path = url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q=');
 	$output = array();
-
-
-
-	if(uuke_alipay_show_link($node)) {
-
-		$output =  array(
-			'#markup' => t('Alipay'),
-			'#prefix' => '<a class= "uuke_pay_button button" href="'.$base_path.'node/'.$nid.'/alipay"">',// target="_blank
-			'#suffix' => '</a>', 
-			'#weight' => -19,
-		);
-	}else {
-		$output =  array(
-			'#markup' => t('Paid'),
-			'#prefix' => '<a class= "uuke_pay_button button " id="pay_disabled" href="'.$base_path.'node/'.$nid.'/alipay" target="_blank">',//
-			'#suffix' => '</a>', 
-			'#weight' => -19,
-		);
-		drupal_add_js('jQuery(document).ready(function () {jQuery("#pay_disabled").bind("click", false); });', 'inline');
-	}
-	drupal_add_css(drupal_get_path('module', 'uuke_alipay') . '/uuke_pay_button.css');
-	// $node = node_view($node);
-	// $output = drupal_render($node['alipay']);
-	return drupal_render($output);
-}
-/**
- * Implements hook_block_view().
- */
-function uuke_alipay_block_view($delta = '') {
-  $block = array();
-  //必须是当前节点
-  $nid = arg(1); //node/1
-  $node = node_load($nid);
-  if($node) {// && uuke_alipay_show_link($node)
-  	 switch ($delta) {
-	    case 'alipay_link':
-	      // $block['subject'] = t('Alipay link');
-	      $block['content'] = uuke_alipay_paylink_block($nid);
-	      break;
-	  }
-  }
-  return $block;
-}
-function uuke_alipay_paylink_block($nid) {
-	$node = node_load($nid);//TODO: get form context  context_get('uuke_alipay', 'pay_link_block_show')
-	$base_path = url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q=');
-	$output = array();
 	if(uuke_alipay_show_link($node)) {
 		$output =  array(
 			'#markup' => t('Alipay'),
