@@ -112,7 +112,6 @@ function uuke_unionpay_notify(){
       drupal_goto("node/$node->nid");
 
 	}
-	echo 'sucess';
 }
 function uuke_unionpay_return() {
   module_load_include('inc', 'uuke_unionpay', 'quickpay_service');

@@ -6,7 +6,9 @@
  *	// WAIT_BUYER_PAY  交易创建  false（不触发通知）
  *	// TRADE_CLOSED  交易关闭  false（不触发通知）
  */
+// Cardinal number add to out_trade_no 商品外部交易号，必填（保证唯一性）
 define('TRADE_ADD', '1366679201');//date("Ymd",)
+
 function uuke_alipay_trade_status_to_chinese($trade_status_string) {
 	switch ($trade_status_string) {
 		case 'WAIT_BUYER_PAY':
@@ -102,7 +104,7 @@ function node_access4uuke_alipay($op, $node, $account = NULL) {
   if($node->type == 'uuke_alipay_order' && $op == 'update') {
     global $user; 
     //不可编辑except 1
-    if($user->uid <> 1) {//noone 
+    if($user->uid <> 1) {//none 
       return false;
     }
     return node_access($op, $node, $account);
@@ -120,6 +122,13 @@ function uuke_alipay_permission() {
       'title' => t('Administer uuke alipay configuration'),
       'restrict access' => TRUE,
     ),
+    'access my orders' => array(
+      'title' => t('Access my orders'),
+    ),
+    'access all orders' => array(
+      'title' => t('Access all orders'),
+      'restrict access' => TRUE,
+    ),
   );
   return $perms;
 }
@@ -132,7 +141,7 @@ function uuke_alipay_for_node($product_node) {
 		drupal_goto('user/login');
 	}
 	if(!isset($product_node->field_uuke_price[LANGUAGE_NONE][0]['value'])) {
-		drupal_set_message(t('本商品免费或不可出售。'), 'status', FALSE);
+		// drupal_set_message(t('本商品免费或不可出售。'), 'status', FALSE);
 		drupal_goto('node/'.$product_node->nid);
 	}
 
@@ -283,7 +292,7 @@ function uuke_alipay_show_link($node) {
 	$show = FALSE;
 	if(isset($uuke_alipay_content_types[$node->type]) && $uuke_alipay_content_types[$node->type]) {
 			if(!isset($node->field_uuke_price[LANGUAGE_NONE][0]['value'])){
-				drupal_set_message(t('本商品免费或不可出售。'), 'status', FALSE);
+				// drupal_set_message(t('本商品免费或不可出售。'), 'status', FALSE);
 			}else{
 				//TODO:判断是否已购买,如果购买了，显示下载链接已安装，若无，显示购买			
 				if($order_nid = uuke_alipay_get_order_nid($node,$account=NULL)) {
@@ -320,7 +329,7 @@ function uuke_alipay_node_view($node, $view_mode, $langcode) {
 	if(isset($uuke_alipay_content_types[$node->type]) && $uuke_alipay_content_types[$node->type]) {
 		if($view_mode=='full') {
 			if(!isset($node->field_uuke_price[LANGUAGE_NONE][0]['value'])){
-				drupal_set_message(t('本商品免费或不可出售。'), 'status', FALSE);
+				// drupal_set_message(t('本商品免费或不可出售。'), 'status', FALSE);
 			}else{
 				//TODO:判断是否已购买,如果购买了，显示下载链接已安装，若无，显示购买
 				$show = FALSE;
@@ -383,8 +392,10 @@ function uuke_alipay_block_view($delta = '') {
   $block = array();
   //必须是当前节点
   $nid = arg(1); //node/1
-  $node = node_load($nid);
-  if($node) {// && uuke_alipay_show_link($node)
+  $node = node_load($nid);  
+  global $user;
+  if($user->uid && $node) {
+  // if($node) {// && uuke_alipay_show_link($node)
   	 switch ($delta) {
 	    case 'alipay_link':
 	      // $block['subject'] = t('Alipay link');
@@ -405,7 +416,7 @@ function uuke_alipay_paylink_block($nid) {
 			'#suffix' => '</a>', 
 			'#weight' => -19,
 		);
-	}else {
+	}elseif(isset($node->field_uuke_price[LANGUAGE_NONE][0]['value'])) {
 		$output =  array(
 			'#markup' => t('Paid'),
 			'#prefix' => '<a class= "uuke_pay_button button " id="pay_disabled" href="'.$base_path.'node/'.$nid.'/alipay" target="_blank">',//

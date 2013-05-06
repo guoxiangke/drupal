@@ -319,7 +319,8 @@ function uuke_unionpay_block_view($delta = '') {
   //必须是当前节点 && 
   $nid = arg(1); //node/1
   $node = node_load($nid);
-  if($node && uuke_alipay_show_link($node)) {
+  global $user;
+  if($user->uid && $node && uuke_alipay_show_link($node)) {
   	 switch ($delta) {
 	    case 'unionpay_link':
 	      // $block['subject'] = t('Unionpay link');
@@ -422,11 +423,13 @@ function uuke_unionpay_form($form, &$form_state) {
 		  ),
 		);
 	// }
-	
 	return $form;
 }
 
 function uuke_unionpay_form_ajax_create_order_callback($form, &$form_state) {
+	if (form_get_errors()) {
+    return $form;
+  }
 	//create the node, return form with order
 	//生成本站订单begin
 	global $user;
