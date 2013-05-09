@@ -1,8 +1,7 @@
 name =  UUKE Alipay module
-description = UUKE Pad Module
+description = Integrated with Alipay service for sell product node.
 package = dev
 core = 7.x
 configure = admin/config/alipay
 dependencies[] = entityreference
 dependencies[] = views
-;dependencies[] = context

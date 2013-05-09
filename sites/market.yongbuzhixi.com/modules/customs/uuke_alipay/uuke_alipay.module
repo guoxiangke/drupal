@@ -1,15 +1,14 @@
 <?php
+// out_trade_no 商品外部交易号，必填（保证唯一性）程序构造使用nid，eg:000000001 过于简单 eg:0000001，添加额外编码TRADE_ADD后，为1368078175。 返回使用时需要减去TRADE_ADD得到nid
+define('TRADE_ADD', '1368078174');
 /**
- * 	//trade_status
- *	// TRADE_FINISHED  交易成功  true（触发通知） 
- *	// TRADE_SUCCESS  支付成功  true（触发通知） 
- *	// WAIT_BUYER_PAY  交易创建  false（不触发通知）
- *	// TRADE_CLOSED  交易关闭  false（不触发通知）
+ * 	change trade_status provided by alipay: to chinese strings.
+ *
+ *	TRADE_FINISHED  交易成功  true（触发通知） 
+ *	TRADE_SUCCESS  支付成功  true（触发通知） 
+ *	WAIT_BUYER_PAY  交易创建  false（不触发通知）
+ *	TRADE_CLOSED  交易关闭  false（不触发通知）
  */
-// Cardinal number add to out_trade_no 商品外部交易号，必填（保证唯一性）
-// Can be any number string.
-define('TRADE_ADD', '1366679201');//date("Ymd",)
-
 function uuke_alipay_trade_status_to_chinese($trade_status_string) {
 	switch ($trade_status_string) {
 		case 'WAIT_BUYER_PAY':
@@ -89,10 +88,8 @@ function uuke_alipay_menu() {
 	return $items;
 }
 /**
- * disable the node/add/answer page.
- * or drupal_set_message($message,'error') in callback....XXX
- * "An answer must be linked to a quetion.
- * Please go to a question page,unless you really know what you are doing!"
+ * User can't add pay order, it was create programmatically.
+ * also can't edit order except user 1.
  */
 function uuke_alipay_menu_alter(&$items) {
   $items['node/add/uuke-alipay-order']['access callback'] = FALSE;
@@ -103,8 +100,7 @@ function uuke_alipay_menu_alter(&$items) {
  */
 function node_access4uuke_alipay($op, $node, $account = NULL) {
   if($node->type == 'uuke_alipay_order' && $op == 'update') {
-    global $user; 
-    //不可编辑except 1
+    global $user;
     if($user->uid <> 1) {//none 
       return false;
     }
@@ -120,7 +116,7 @@ function node_access4uuke_alipay($op, $node, $account = NULL) {
 function uuke_alipay_permission() {
 	 $perms = array(
     'administer uuke alipay configuration' => array(
-      'title' => t('Administer uuke alipay configuration'),
+      'title' => t('Administer alipay configuration'),
       'restrict access' => TRUE,
     ),
     'access my orders' => array(

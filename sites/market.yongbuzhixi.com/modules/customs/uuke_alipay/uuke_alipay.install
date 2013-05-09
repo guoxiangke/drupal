@@ -8,7 +8,7 @@ function uuke_alipay_install() {
     'bundles' => array(
       'uuke_alipay_order' => (object) array(
         'type' => 'uuke_alipay_order',
-        'name' => 'Alipay Order',
+        'name' => 'Pay Order',
         'base' => 'node_content',
         'module' => 'node',
         'description' => '',
@@ -1175,7 +1175,7 @@ function uuke_alipay_install() {
     ),
   );
   foreach ($data['bundles'] as $type => $bundle) {
-      //node_type_set_defaults
+    //node_type_set_defaults
     if(in_array($type, node_type_get_types())){
       node_type_set_defaults($bundle);
       drupal_set_message(t('Content Type : '. $type .' was customed.'));

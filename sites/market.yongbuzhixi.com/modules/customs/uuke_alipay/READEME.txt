@@ -31,3 +31,7 @@ function uuke_alipay_all_paid($account=NULL,$content_type='app') {
 }
 
 paylink: node/$node/alipay
+
+Attentions：
+1.一个节点商品，对于一个user只可以购买一次。
+2.
