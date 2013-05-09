@@ -79,7 +79,7 @@ function uuke_unionpay_for_node($product_node) {
 		//生成本站订单begin
 		$order_node = new stdClass();
 		$order_node->type = 'uuke_alipay_order';
-		$order_node->title    = 'pending';
+		$order_node->title    = REQUEST_TIME;//pending
 		$order_node->language = LANGUAGE_NONE; // Or e.g. 'en' if locale is enabled
 
 		$order_node->uid = $user->uid;
@@ -445,7 +445,7 @@ function uuke_unionpay_form_ajax_create_order_callback($form, &$form_state) {
 	if(!$order_node) {
 		$order_node = new stdClass();
 		$order_node->type = 'uuke_alipay_order';
-		$order_node->title    = 'pending';
+		$order_node->title    = REQUEST_TIME;//pending
 		$order_node->language = LANGUAGE_NONE;
 		$order_node->uid = $user->uid;
 		$order_node->field_uuke_alipay_order_uid[LANGUAGE_NONE][] = array(

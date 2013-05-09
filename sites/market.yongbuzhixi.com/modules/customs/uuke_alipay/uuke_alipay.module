@@ -7,6 +7,7 @@
  *	// TRADE_CLOSED  交易关闭  false（不触发通知）
  */
 // Cardinal number add to out_trade_no 商品外部交易号，必填（保证唯一性）
+// Can be any number string.
 define('TRADE_ADD', '1366679201');//date("Ymd",)
 
 function uuke_alipay_trade_status_to_chinese($trade_status_string) {
@@ -166,7 +167,7 @@ function uuke_alipay_for_node($product_node) {
 		//生成本站订单begin
 		$order_node = new stdClass();
 		$order_node->type = 'uuke_alipay_order';
-		$order_node->title    = 'pending';
+		$order_node->title    = REQUEST_TIME;//pending
 		$order_node->language = LANGUAGE_NONE;
 
 		$order_node->uid = $user->uid;
