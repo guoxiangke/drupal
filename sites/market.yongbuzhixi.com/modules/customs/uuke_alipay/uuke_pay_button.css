@@ -160,3 +160,8 @@ a.uuke_pay_button:hover , #pay_disabled {
 #edit-unionpay-link {
 	margin-top: 5px;
 }
+
+div.pane-uuke-alipay-alipay-link {
+	width: 50%;
+float: left;
+}

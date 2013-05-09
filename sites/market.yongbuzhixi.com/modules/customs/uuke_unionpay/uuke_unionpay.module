@@ -438,7 +438,7 @@ function uuke_unionpay_form_ajax_create_order_callback($form, &$form_state) {
 	// dpm($form_state);
 	// $product_node = node_load(context_get('uuke_unionpay', 'pay_link_nid'));
 	$price = $product_node->field_uuke_price[LANGUAGE_NONE][0]['value'];
-
+	$order_node = NULL;
 	if($order_nid = uuke_alipay_get_order_nid($product_node,$account=NULL)) {
 		$order_node = node_load($order_nid);
 	}
